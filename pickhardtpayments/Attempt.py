@@ -1,7 +1,6 @@
 from enum import Enum
 
-from Channel import Channel
-from pickhardtpayments import UncertaintyChannel
+from pickhardtpayments.pickhardtpayments import UncertaintyChannel, Channel
 
 from typing import List
 
