@@ -33,6 +33,7 @@ class Payment:
         self._receiver = receiver
         self._total_amount = total_amount
         self._attempts = list()
+        self._fee_per_node = None
 
     def __str__(self):
         return "Payment with {} attempts to deliver {} sats from {} to {}".format(len(self._attempts),
@@ -181,3 +182,11 @@ class Payment:
         :type: bool
         """
         self._successful = value
+
+    @property
+    def fee_per_node(self):
+        return self._fee_per_node
+
+    @fee_per_node.setter
+    def fee_per_node(self, fees_per_node):
+        self._fee_per_node = fees_per_node

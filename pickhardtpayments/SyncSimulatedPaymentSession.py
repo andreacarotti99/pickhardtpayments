@@ -19,7 +19,7 @@ from ortools.graph import pywrapgraph
 import time
 import networkx as nx
 
-DEFAULT_BASE_THRESHOLD = 0
+DEFAULT_BASE_THRESHOLD = 1_000_000  # All the channels with a base fee higher than this threshold are not considered
 
 
 def set_logger():
@@ -68,8 +68,10 @@ class SyncSimulatedPaymentSession:
         self._mcf_id = {}
         self._node_key = {}
         for k, node_id in enumerate(self._uncertainty_network.network.nodes()):
+
             self._mcf_id[node_id] = k
             self._node_key[k] = node_id
+
 
     def _prepare_mcf_solver(self, src, dest, amt: int = 1, mu: int = 100_000_000,
                             base_fee: int = DEFAULT_BASE_THRESHOLD):
@@ -94,7 +96,7 @@ class SyncSimulatedPaymentSession:
             # However the pruning would be much better to work on quantiles of normalized cost
             # So as soon as we have better Scaling, Centralization and feature engineering we can
             # probably have a more focused pruning
-            if self._prune_network and channel.success_probability(250_000) < 0.9:
+            if self._prune_network and channel.success_probability(250_000) < 0: # 0.9:
                 continue
             cnt = 0
             # QUANTIZATION):
@@ -113,6 +115,7 @@ class SyncSimulatedPaymentSession:
             self._min_cost_flow.SetNodeSupply(self._mcf_id[i], 0)
 
         # add amount to sending node
+        # print(self._mcf_id)
         self._min_cost_flow.SetNodeSupply(
             self._mcf_id[src], int(amt))  # /QUANTIZATION))
 
@@ -274,11 +277,11 @@ class SyncSimulatedPaymentSession:
                 self._uncertainty_network.allocate_amount_on_path(
                     attempt.path, attempt.amount)
 
-
                 # unnecessary, because information is in attempt (Status INFLIGHT)
                 # settled_onions.append(payments[key])
             else:
                 attempt.status = AttemptStatus.FAILED
+                attempt.empty_feeEarned_per_node()
 
     def _evaluate_attempts(self, payment: Payment):
         """
@@ -331,6 +334,16 @@ class SyncSimulatedPaymentSession:
         print("paid fees: {:8.3f} sat".format(paid_fees))
         return residual_amt, paid_fees, len(payment.attempts), len(failed_attempts)
 
+    def get_feeEarned_per_node_successful_attempts(self, attempts: List[Attempt]):
+        fees_per_node = {}
+        for attempt in attempts:
+            for node, fee in attempt.feeEarned_per_node.items():
+                if node in fees_per_node:
+                    fees_per_node[node] += fee
+                else:
+                    fees_per_node[node] = fee
+        return fees_per_node
+
     def forget_information(self):
         """
         forgets all the information in the UncertaintyNetwork that is a member of the PaymentSession
@@ -350,6 +363,8 @@ class SyncSimulatedPaymentSession:
         I could not put it here as some experiments require sharing of liquidity information
 
         """
+        # Added because we don't require the sharing of liquidity
+        self.forget_information()
 
         set_logger()
         logging.info('*** new pickhardt payment ***')
@@ -377,6 +392,8 @@ class SyncSimulatedPaymentSession:
             # paths is the lists of channels, runtime the time it took to calculate all candidates in this round
             paths, runtime = self._generate_candidate_paths(payment.sender, payment.receiver, amt, mu, base)
             sub_payment.add_attempts(paths)
+
+            # print(paths)
 
             # make attempts, try to send onion and register if success or not
             # update our information about the UncertaintyNetwork
@@ -406,6 +423,8 @@ class SyncSimulatedPaymentSession:
                     print(e)
                     return -1
             payment.successful = True
+            payment.fee_per_node = self.get_feeEarned_per_node_successful_attempts(payment.attempts)
+
         payment.end_time = time.time()
 
         entropy_end = self._uncertainty_network.entropy()
@@ -422,3 +441,7 @@ class SyncSimulatedPaymentSession:
         print("fee for settlement of delivery: {:8.3f} sat --> {} ppm".format(
             payment.settlement_fees/1000, int(payment.settlement_fees * 1000 / payment.total_amount)))
         print("used mu:", mu)
+
+        return payment
+
+

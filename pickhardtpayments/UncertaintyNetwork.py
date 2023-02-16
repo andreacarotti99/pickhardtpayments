@@ -1,3 +1,6 @@
+import random
+import time
+
 from .ChannelGraph import ChannelGraph
 from .UncertaintyChannel import UncertaintyChannel
 from .OracleLightningNetwork import OracleLightningNetwork
@@ -112,3 +115,11 @@ class UncertaintyNetwork(ChannelGraph):
                 # print(key, arc.entropy())
         print("channels with full knowledge: ", len(ego_network))
         print("channels with 2 Bits of less entropy: ", len(foaf_network))
+
+    def get_random_node(self):
+        """
+        returns a random node from the Network
+        """
+        if self.network.number_of_nodes() > 0:
+            # random.seed(int(time.time() * 1000))
+            return random.choice(list(self.network.nodes()))

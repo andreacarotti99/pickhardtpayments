@@ -50,13 +50,22 @@ class Attempt:
         channel: UncertaintyChannel
         self._routing_fee = 0
         self._probability = 1
+
+        self._feeEarned_per_node = {}
+
         for channel in path:
             self._routing_fee += channel.routing_cost_msat(amount)
             self._probability *= channel.success_probability(amount)
+            # print(channel.src + " -> " + channel.dest)
             # When Attempt is created, all amounts are set inflight. Needs to be updated with AttemptStatus change!
             # This is to correctly compute conditional probabilities of non-disjoint paths in the same set of paths
             # channel.in_flight(amount)
             channel.allocate_amount(amount)
+
+            # Increment the node fee only if the node is routing the payment and it is not the dest of the payment
+            if channel.dest != path[-1].dest:
+                self._feeEarned_per_node[channel.dest] = channel.routing_cost_msat(amount)
+
         self._status = AttemptStatus.PLANNED
 
     def __str__(self):
@@ -134,3 +143,12 @@ class Attempt:
         :rtype: float
         """
         return self._probability
+
+    @property
+    def feeEarned_per_node(self):
+        return self._feeEarned_per_node
+
+    def empty_feeEarned_per_node(self):
+        self._feeEarned_per_node = {}
+        return
+

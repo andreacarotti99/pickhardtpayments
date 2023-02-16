@@ -16,5 +16,6 @@ __all__ = [
     "UncertaintyNetwork",
     "OracleLightningNetwork",
     "ChannelGraph",
-    "SyncSimulatedPaymentSession"
+    "SyncSimulatedPaymentSession",
+    "Simulation"
 ]
