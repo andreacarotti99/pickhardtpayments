@@ -34,6 +34,7 @@ class Payment:
         self._total_amount = total_amount
         self._attempts = list()
         self._fee_per_node = None
+        self._routing_nodes = None
 
     def __str__(self):
         return "Payment with {} attempts to deliver {} sats from {} to {}".format(len(self._attempts),
@@ -190,3 +191,14 @@ class Payment:
     @fee_per_node.setter
     def fee_per_node(self, fees_per_node):
         self._fee_per_node = fees_per_node
+
+    @property
+    def routing_nodes(self):
+        return self._routing_nodes
+
+    @routing_nodes.setter
+    def routing_nodes(self, routing_nodes):
+        self._routing_nodes = routing_nodes
+
+
+

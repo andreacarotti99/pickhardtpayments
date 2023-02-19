@@ -14,14 +14,14 @@ def print_info_results(df):
     return
 
 def apply_filters(df):
-    df.loc[df['total_fee'] > 1_000_000, 'total_fee'] = 1_000_000
+    # df.loc[df['total_fee'] > 25_000, 'total_fee'] = 25_000
     # df = df.loc[df['degree'] > 20]
-    # df = df.loc[df['total_fee'] >= 125]
+    # df = df.loc[df['total_fee'] >= 100]
     # df = df.loc[df['routed_transactions'] >= 40]
     # df = df.loc[df['routed_transactions'] <= 100]
     # df.loc[df['ratio'] > 0.0004, 'ratio'] = 0.0004
     # df = df.loc[df['ratio'] > 0.000005]
-    df = df.loc[df['capacity'] >= 250_000_000]
+    # df = df.loc[df['capacity'] >= 250_000_000]
     return df
 
 def main():
@@ -38,7 +38,7 @@ def main():
     df = apply_filters(df)
 
 
-    ax = df.plot(x='node', y='total_fee',kind='bar')
+    ax = df.plot(x='node', y='ratio',kind='bar')
     plt.title("fee for each node")
     plt.suptitle("CAP of each node decreases (->) - DESC")
     plt.xlabel('node')

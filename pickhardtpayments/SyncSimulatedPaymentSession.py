@@ -344,6 +344,9 @@ class SyncSimulatedPaymentSession:
         return residual_amt, paid_fees, len(payment.attempts), len(failed_attempts)
 
     def get_feeEarned_per_node_successful_attempts(self, attempts: List[Attempt]):
+        """
+        Returns a dictionary containing the nodes that earned fee and the total fee they earned from those attempts
+        """
         fees_per_node = {}
         for attempt in attempts:
             for node, fee in attempt.feeEarned_per_node.items():
@@ -352,6 +355,19 @@ class SyncSimulatedPaymentSession:
                 else:
                     fees_per_node[node] = fee
         return fees_per_node
+
+    def get_payment_routing_nodes(self, attempts: List[Attempt]):
+        """
+        Returns a dictionary containing the nodes that routed at least one payment with the number of payments they routed
+        """
+        routing_nodes = {}
+        for attempt in attempts:
+            for node, fee in attempt.feeEarned_per_node.items():
+                if node in routing_nodes:
+                    routing_nodes[node] += 1
+                else:
+                    routing_nodes[node] = 1
+        return routing_nodes
 
     def forget_information(self):
         """
@@ -440,6 +456,7 @@ class SyncSimulatedPaymentSession:
                     return payment
             payment.successful = True
             payment.fee_per_node = self.get_feeEarned_per_node_successful_attempts(payment.attempts)
+            payment.routing_nodes = self.get_payment_routing_nodes(payment.attempts)
 
         payment.end_time = time.time()
 

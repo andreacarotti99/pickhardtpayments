@@ -19,6 +19,18 @@ def export_results(df):
         os.makedirs(output_dir)
     df.to_csv("%s/results.csv" % output_dir, index=False)
 
+def compute_routing_nodes(payments_routing_nodes):
+    """
+    takes a list of dictionaries containing the number of routed payments of the nodes
+    """
+    routing_nodes = {}
+    for p in payments_routing_nodes:
+        for node, routed_payments in p.items():
+            if node in routing_nodes:
+                routing_nodes[node] += 1
+            else:
+                routing_nodes[node] = 1
+    return routing_nodes
 
 def compute_fees_per_node(payments_fees):
     """
@@ -44,6 +56,7 @@ def run_success_payments_simulation(payment_session, uncertainity_network, payme
     print("Starting simulation with " + str(payments_to_simulate) + " payments of " + str(payments_amount) + " sat.")
     paymentNumber = 0
     payments_fees = []
+    payments_routing_nodes = []
     payment_session.forget_information()
     while paymentNumber < payments_to_simulate:
         print("******************************************************************************")
@@ -58,11 +71,12 @@ def run_success_payments_simulation(payment_session, uncertainity_network, payme
         if payment.successful:
             paymentNumber += 1
             payments_fees.append(payment.fee_per_node)
-    return payments_fees
+            payments_routing_nodes.append(payment.routing_nodes)
+    return payments_fees, payments_routing_nodes
 
 
 def main():
-    payments_to_simulate = 1000
+    payments_to_simulate = 10_000
     payments_amount = 1000
     mu = 10
     base = 20_000
@@ -84,18 +98,20 @@ def main():
 
     # Running the Simulation and
     # Saving into a list the fees for each payment (the fees for each payment is a dictionary with the node and its earned fees)
-    payments_fees = run_success_payments_simulation(payment_session, uncertainty_network, payments_to_simulate,
+    payments_fees, payments_routing_nodes = run_success_payments_simulation(payment_session, uncertainty_network, payments_to_simulate,
                                                     payments_amount, mu, base)
 
     # Saving into a dictionary the total fees for each node (that charged any fee)
     total_fees_per_node = compute_fees_per_node(payments_fees)
+    total_routed_payments_per_node = compute_routing_nodes(payments_routing_nodes)
 
     # Converting the fees of each node into a dataframe
-    df_total_fees_per_node = pd.DataFrame(total_fees_per_node.items(), columns=['node', 'total_fee'])
+    df = pd.DataFrame(total_fees_per_node.items(), columns=['node', 'total_fee'])
 
     # Mapping the capacities into the df total_fees (so we consider only the capacities of the nodes that earned fees)
-    df_total_fees_per_node['capacity'] = df_total_fees_per_node['node'].map(nodes_capacities)
-    results = df_total_fees_per_node
+    df['capacity'] = df['node'].map(nodes_capacities)
+    df['routed_payments'] = df['node'].map(total_routed_payments_per_node)
+    results = df
 
     print(results.head(10))
 
