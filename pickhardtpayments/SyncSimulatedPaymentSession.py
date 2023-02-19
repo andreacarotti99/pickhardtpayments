@@ -96,7 +96,7 @@ class SyncSimulatedPaymentSession:
             # However the pruning would be much better to work on quantiles of normalized cost
             # So as soon as we have better Scaling, Centralization and feature engineering we can
             # probably have a more focused pruning
-            if self._prune_network and channel.success_probability(250_000) < 0: # 0.9:
+            if self._prune_network and channel.success_probability(250_000) < 0.9:
                 continue
             cnt = 0
             # QUANTIZATION):
@@ -232,11 +232,20 @@ class SyncSimulatedPaymentSession:
         if status != self._min_cost_flow.OPTIMAL:
             print('There was an issue with the min cost flow input.')
             print(f'Status: {status}')
-            exit(1)
+            # exit(1)
+            issue_min_cost_flow = True
+            return -1, -1, issue_min_cost_flow
+        else:
+            issue_min_cost_flow = False
+
 
         attempts_in_round = self._dissect_flow_to_paths(src, dest)
         end = time.time()
-        return attempts_in_round, end - start
+
+        # to avoid the issue with min cost flow input we try to work around the problem by not considering those transactions
+        # for which the min cost flow problem occurs
+
+        return attempts_in_round, end - start, issue_min_cost_flow
 
     def _estimate_payment_statistics(self, attempts):
         """
@@ -366,8 +375,8 @@ class SyncSimulatedPaymentSession:
         # Added because we don't require the sharing of liquidity
         self.forget_information()
 
-        set_logger()
-        logging.info('*** new pickhardt payment ***')
+        # set_logger()
+        # logging.info('*** new pickhardt payment ***')
 
         # Setup
         entropy_start = self._uncertainty_network.entropy()
@@ -390,7 +399,12 @@ class SyncSimulatedPaymentSession:
             sub_payment = Payment(payment.sender, payment.receiver, amt)
             # transfer to a min cost flow problem and run the solver
             # paths is the lists of channels, runtime the time it took to calculate all candidates in this round
-            paths, runtime = self._generate_candidate_paths(payment.sender, payment.receiver, amt, mu, base)
+            paths, runtime, issue_min_cost_flow = self._generate_candidate_paths(payment.sender, payment.receiver, amt, mu, base)
+
+            if issue_min_cost_flow:
+                payment.successful = False
+                return payment
+
             sub_payment.add_attempts(paths)
 
             # print(paths)
@@ -420,8 +434,10 @@ class SyncSimulatedPaymentSession:
                     self._oracle.settle_payment(onion.path, onion.amount)
                     onion.status = AttemptStatus.SETTLED
                 except Exception as e:
+                    print("There was a problem... Payment Failed for this reason:")
                     print(e)
-                    return -1
+                    payment.successful = False
+                    return payment
             payment.successful = True
             payment.fee_per_node = self.get_feeEarned_per_node_successful_attempts(payment.attempts)
 

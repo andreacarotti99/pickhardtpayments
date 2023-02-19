@@ -14,8 +14,8 @@ class OracleChannel(Channel):
         super().__init__(channel.cln_jsn)
         self._actual_liquidity = actual_liquidity
         if actual_liquidity is None or actual_liquidity >= self.capacity or actual_liquidity < 0:
-            self._actual_liquidity = random.randint(0, self.capacity)
-
+            # self._actual_liquidity = random.randint(0, self.capacity)
+            self._actual_liquidity = self.capacity/2
     def __str__(self):
         return super().__str__() + " actual Liquidity: {}".format(self.actual_liquidity)
 

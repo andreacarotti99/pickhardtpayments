@@ -9,6 +9,7 @@ DEFAULT_BASE_THRESHOLD = 0
 
 class OracleLightningNetwork(ChannelGraph):
 
+
     def __init__(self, channel_graph: ChannelGraph):
         self._channel_graph = channel_graph
         self._network = nx.MultiDiGraph()
@@ -51,6 +52,16 @@ class OracleLightningNetwork(ChannelGraph):
             if not success_of_probe:
                 return False, channel
         return True, None
+
+    def nodes_capacities(self):
+        """ compute the capacities for each node in the graph and returns a dictionary with the nodes and their capacity"""
+        nodes_capacities = {}
+        for src, dest, channel in self.network.edges(data="channel"):
+            if src in nodes_capacities:
+                nodes_capacities[src] += channel.capacity
+            else:
+                nodes_capacities[src] = channel.capacity
+        return nodes_capacities
 
     def theoretical_maximum_payable_amount(self, source: str, destination: str, base_fee: int = DEFAULT_BASE_THRESHOLD):
         """
