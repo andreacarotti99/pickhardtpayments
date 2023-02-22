@@ -2,7 +2,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import os
 
-RESULTS_FILE = "results.csv"
+RESULTS_FILE = "results_1000trans_1000SAT_100mu_pickhardt_12apr2022_fixed.csv"
 
 
 def print_info_results(df):
@@ -14,14 +14,14 @@ def print_info_results(df):
     return
 
 def apply_filters(df):
-    # df.loc[df['total_fee'] > 25_000, 'total_fee'] = 25_000
+    # df.loc[df['total_fee'] > 500_000, 'total_fee'] = 500_000
     # df = df.loc[df['degree'] > 20]
     # df = df.loc[df['total_fee'] >= 100]
-    # df = df.loc[df['routed_transactions'] >= 40]
+    df = df.loc[df['routed_payments'] >= 10]
     # df = df.loc[df['routed_transactions'] <= 100]
     # df.loc[df['ratio'] > 0.0004, 'ratio'] = 0.0004
     # df = df.loc[df['ratio'] > 0.000005]
-    # df = df.loc[df['capacity'] >= 250_000_000]
+    # df = df.loc[df['capacity'] >= 100_000]
     return df
 
 def main():
@@ -38,13 +38,13 @@ def main():
     df = apply_filters(df)
 
 
-    ax = df.plot(x='node', y='ratio',kind='bar')
+    ax = df.plot(x='node', y='routed_payments',kind='bar')
     plt.title("fee for each node")
     plt.suptitle("CAP of each node decreases (->) - DESC")
     plt.xlabel('node')
     plt.ylabel('fee')
-    ax.set_xticklabels(df['node'],rotation=90, fontsize=4)
     # ax.set_xticklabels(df['node'],rotation=90, fontsize=4)
+    ax.set_xticklabels(df['routed_payments'],rotation=90, fontsize=7)
     plt.show()
     return
 

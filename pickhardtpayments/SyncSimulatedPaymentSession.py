@@ -19,7 +19,6 @@ from ortools.graph import pywrapgraph
 import time
 import networkx as nx
 
-DEFAULT_BASE_THRESHOLD = 1_000_000  # All the channels with a base fee higher than this threshold are not considered
 
 
 def set_logger():
@@ -73,8 +72,7 @@ class SyncSimulatedPaymentSession:
             self._node_key[k] = node_id
 
 
-    def _prepare_mcf_solver(self, src, dest, amt: int = 1, mu: int = 100_000_000,
-                            base_fee: int = DEFAULT_BASE_THRESHOLD):
+    def _prepare_mcf_solver(self, src, dest, amt, mu, base_fee):
         """
         computes the uncertainty network given our prior belief and prepares the min cost flow solver
 
@@ -207,8 +205,7 @@ class SyncSimulatedPaymentSession:
                     G.remove_edge(src, dest, key=channel.short_channel_id)
         return attempts
 
-    def _generate_candidate_paths(self, src, dest, amt: int, mu: int = 100_000_000,
-                                  base: int = DEFAULT_BASE_THRESHOLD):
+    def _generate_candidate_paths(self, src, dest, amt, mu, base):
         """
         computes the optimal payment split to deliver `amt` from `src` to `dest` and updates our belief about the
         liquidity
@@ -382,7 +379,7 @@ class SyncSimulatedPaymentSession:
         self._uncertainty_network.activate_network_wide_uncertainty_reduction(
             n, self._oracle)
 
-    def pickhardt_pay(self, src, dest, amt, mu=1, base=DEFAULT_BASE_THRESHOLD):
+    def pickhardt_pay(self, src, dest, amt, mu, base):
         """
         conduct one experiment! might need to call oracle.reset_uncertainty_network() first
         I could not put it here as some experiments require sharing of liquidity information

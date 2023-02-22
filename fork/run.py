@@ -7,17 +7,17 @@ from pickhardtpayments.pickhardtpayments import OracleLightningNetwork
 from pickhardtpayments.pickhardtpayments import SyncSimulatedPaymentSession
 import numpy as np
 
-DEFAULT_BASE_THRESHOLD = 0
 
-
-def export_results(df):
+def export_results(df, payments_to_simulate, payments_amount, mu, snapshot_file):
     """
     Take a dataframe and exports it in the folder RESULTS as a csv file
     """
     output_dir = 'RESULTS'
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    df.to_csv("%s/results.csv" % output_dir, index=False)
+    output_file = "results_" + str(payments_to_simulate) + "trans_" + str(payments_amount) + "SAT_" + str(mu) + "mu_" + snapshot_file[:-5]
+
+    df.to_csv("%s/%s.csv" % (output_dir, output_file), index=False)
 
 def compute_routing_nodes(payments_routing_nodes):
     """
@@ -76,13 +76,14 @@ def run_success_payments_simulation(payment_session, uncertainity_network, payme
 
 
 def main():
-    payments_to_simulate = 10_000
+    payments_to_simulate = 1000
     payments_amount = 1000
-    mu = 10
-    base = 20_000
+    mu = 100
+    base = 20_000  # Base fee under which I add to the Uncertainty Graph the nodes (otherwise I ignore them)
+    snapshot_file = "pickhardt_12apr2022_fixed.json"
 
-    channel_graph = ChannelGraph("converted.json")
-    uncertainty_network = UncertaintyNetwork(channel_graph)
+    channel_graph = ChannelGraph("SNAPSHOTS/" + snapshot_file)
+    uncertainty_network = UncertaintyNetwork(channel_graph, base)
     oracle_lightning_network = OracleLightningNetwork(channel_graph)
     payment_session = SyncSimulatedPaymentSession(oracle_lightning_network, uncertainty_network, prune_network=False)
     payment_session.forget_information()
@@ -115,7 +116,7 @@ def main():
 
     print(results.head(10))
 
-    export_results(results)
+    export_results(results, payments_to_simulate, payments_amount, mu, snapshot_file)
 
     return
 

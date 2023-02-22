@@ -9,8 +9,6 @@ from .OracleLightningNetwork import OracleLightningNetwork
 from typing import List
 import networkx as nx
 
-DEFAULT_BASE_THRESHOLD = 0
-
 
 class UncertaintyNetwork(ChannelGraph):
     """
@@ -24,7 +22,8 @@ class UncertaintyNetwork(ChannelGraph):
     Paths cannot be probed against the UncertaintyNetwork as it lacks an Oracle
     """
 
-    def __init__(self, channel_graph: ChannelGraph, base_threshold: int = DEFAULT_BASE_THRESHOLD):
+
+    def __init__(self, channel_graph: ChannelGraph, base_threshold):
         self._channel_graph = nx.MultiDiGraph()
         for src, dest, keys, channel in channel_graph.network.edges(data="channel", keys=True):
             oracle_channel = UncertaintyChannel(channel)

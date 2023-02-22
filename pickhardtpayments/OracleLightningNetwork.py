@@ -99,6 +99,10 @@ class OracleLightningNetwork(ChannelGraph):
         for channel in path:
             settlement_channel = self.get_channel(channel.src, channel.dest, channel.short_channel_id)
             return_settlement_channel = self.get_channel(channel.dest, channel.src, channel.short_channel_id)
+
+            # print(settlement_channel)
+            # print(return_settlement_channel)
+
             if settlement_channel.actual_liquidity > payment_amount:
                 # decrease channel balance in sending channel by amount
                 settlement_channel.actual_liquidity = settlement_channel.actual_liquidity - payment_amount

@@ -3,6 +3,7 @@ import random
 import time
 import networkx as nx
 from .Channel import Channel
+from pickhardtpayments.fork.SplitNodes import *
 
 
 class ChannelGraph:
@@ -48,3 +49,4 @@ class ChannelGraph:
         if self.network.has_edge(src, dest):
             if short_channel_id in self.network[src][dest]:
                 return self.network[src][dest][short_channel_id]["channel"]
+

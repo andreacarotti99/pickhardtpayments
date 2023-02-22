@@ -6,6 +6,6 @@ pickhardtpayments/__pycache__
 
 # not including large file with Channel Graph
 *.json
-examples/.json
+fork/.json
 
 pickhardt_pay.log
