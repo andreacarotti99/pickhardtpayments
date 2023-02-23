@@ -76,9 +76,9 @@ def run_success_payments_simulation(payment_session, uncertainity_network, payme
 
 
 def main():
-    payments_to_simulate = 1000
+    payments_to_simulate = 10_000
     payments_amount = 1000
-    mu = 100
+    mu = 0
     base = 20_000  # Base fee under which I add to the Uncertainty Graph the nodes (otherwise I ignore them)
     snapshot_file = "pickhardt_12apr2022_fixed.json"
 

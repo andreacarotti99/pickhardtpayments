@@ -2,29 +2,37 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import os
 
-RESULTS_FILE = "results_1000trans_1000SAT_100mu_pickhardt_12apr2022_fixed.csv"
+RESULTS_FILE = "results_10000trans_1000SAT_0mu_pickhardt_12apr2022_fixed_const_fees.csv"
+
+
 
 
 def print_info_results(df):
     # print("Avg deg: " + str(df['degree'].mean()))
-    print("Avg cap: " + str(df['capacity'].mean()))
-    print("Avg fee: " + str(df['total_fee'].mean()))
+    print("Avg capacity of each node: " + str(df['capacity'].mean()))
+    print("Median capacity of each node: " + str(df['capacity'].median()))
+    print("Avg fee earned by each node: " + str(df['total_fee'].mean()))
+    print("Median fee earned by each node: " + str(df['total_fee'].median()))
     # print("Avg routed trans: " + str(df['routed_transactions'].mean()))
-    print("Number of nodes: " + str(df.shape[0]))
+    print("Number of nodes that earned fees: " + str(df.shape[0]))
     return
 
 def apply_filters(df):
     # df.loc[df['total_fee'] > 500_000, 'total_fee'] = 500_000
     # df = df.loc[df['degree'] > 20]
     # df = df.loc[df['total_fee'] >= 100]
-    df = df.loc[df['routed_payments'] >= 10]
+    df = df.loc[df['routed_payments'] > 20]
     # df = df.loc[df['routed_transactions'] <= 100]
     # df.loc[df['ratio'] > 0.0004, 'ratio'] = 0.0004
     # df = df.loc[df['ratio'] > 0.000005]
-    # df = df.loc[df['capacity'] >= 100_000]
+    # df = df.loc[df['capacity'] >= 500_000_000]
     return df
 
 def main():
+    screen_size = plt.rcParams["figure.figsize"]
+    plt.rcParams["figure.figsize"] = (screen_size[0]*2.1, screen_size[1]*1.5)
+
+
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(current_file_directory, RESULTS_FILE)
     df = pd.read_csv(file_path)
@@ -38,13 +46,20 @@ def main():
     df = apply_filters(df)
 
 
-    ax = df.plot(x='node', y='routed_payments',kind='bar')
-    plt.title("fee for each node")
-    plt.suptitle("CAP of each node decreases (->) - DESC")
+    ax = df.plot(x='node', y='ratio',kind='bar')
+    plt.title("RATIO fee/capacity for each node")
+    plt.suptitle("CAP of each node decreases (--->) - DESC")
     plt.xlabel('node')
-    plt.ylabel('fee')
+    plt.ylabel('total_fees/capacity')
     # ax.set_xticklabels(df['node'],rotation=90, fontsize=4)
-    ax.set_xticklabels(df['routed_payments'],rotation=90, fontsize=7)
+    ax.set_xticklabels(df['routed_payments'],rotation=90, fontsize=3)
+
+    # plt.figtext(0.15, 0.01, 'Filter applied: # routed payments > 20', fontsize=12, ha='left')
+
+
+    fig = ax.get_figure()
+    # Just if you want to save the results in a file
+    # fig.savefig('my_plot.png')
     plt.show()
     return
 

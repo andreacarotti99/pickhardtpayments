@@ -1,6 +1,5 @@
 import json
 import os
-from InfoJson import *
 
 def create_fake_snapshot(original_snapshot_json, file_converted):
     with open(original_snapshot_json, 'r') as file:
@@ -84,10 +83,10 @@ def from_lnd_to_corelightning(json_file, file_name):
 
 def main():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    file_to_convert = "pickhardt_12apr2022_fixed.json"
+    file_to_convert = "cosimo_19jan2023.json"
     file_path = os.path.join(current_file_directory, "SNAPSHOTS/" + file_to_convert)
-    # from_lnd_to_corelightning(file_path, "SNAPSHOTS/" + "converted.json")
-    create_fake_snapshot(file_path, "pickhardt_12apr2022_fixed_const_fees.json")
+    from_lnd_to_corelightning(file_path, "SNAPSHOTS/" + "converted.json")
+    # create_fake_snapshot(file_path, "pickhardt_12apr2022_fixed_const_fees.json")
     return
 
 if __name__ == "__main__":

@@ -1,6 +1,9 @@
 import json
 from heapq import nlargest
 
+from tqdm import tqdm
+
+
 def find_nodes_with_highest_capacity(file_name, n=10):
 
     with open(file_name, "r") as file:
@@ -35,11 +38,11 @@ def split_channels(nodes, json_path):
         data = json.load(file)
 
     # Create a set of node IDs to look for
-    node_ids = set(node["node_id"] for node in nodes)
+    nodes_set = set(nodes)
 
     # Loop through the channels and split those connected to the nodes
-    for channel in data["channels"]:
-        if channel["source"] in node_ids:
+    for channel in tqdm(data["channels"]):
+        if channel["source"] in nodes_set:
             # Create two new channels with half the satoshis and amount_msat
             channel_1 = channel.copy()
             channel_1["source"] += "_1"
@@ -56,16 +59,23 @@ def split_channels(nodes, json_path):
             data["channels"].append(channel_1)
             data["channels"].append(channel_2)
 
-    # Write the modified JSON file
-    output = json_path + "_" + str(len(nodes)) + "_nodes_split"
+    return data
+
+def export_file(data, file_name, nodes):
+    output = file_name[:-5] + "_" + str(len(nodes)) + "_nodes_split.json"
     with open(output, "w") as file:
         json.dump(data, file, indent=2)
 
-
 def main():
-    file_name = "listchannels20220412.json"
-    hcn = find_nodes_with_highest_capacity(file_name, 10)
-    split_channels(hcn, file_name)
+    file_name = "pickhardt_12apr2022_fixed.json"
+    file_path = "SNAPSHOTS/" + file_name
+    number_of_nodes_to_split = 10
+    hcn = find_nodes_with_highest_capacity(file_path, number_of_nodes_to_split)
+    print(f"Splitting the first {number_of_nodes_to_split} nodes (capacity):")
+    print(hcn)
+    data = split_channels(hcn, file_path)
+    export_file(data, file_name, hcn)
+    print("Split successful new json was generated...")
     return
 
 if __name__ == "__main__":
