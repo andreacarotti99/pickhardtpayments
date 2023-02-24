@@ -83,9 +83,9 @@ def from_lnd_to_corelightning(json_file, file_name):
 
 def main():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    file_to_convert = "cosimo_19jan2023.json"
+    file_to_convert = "lntrafficanalysis_2019.json"
     file_path = os.path.join(current_file_directory, "SNAPSHOTS/" + file_to_convert)
-    from_lnd_to_corelightning(file_path, "SNAPSHOTS/" + "converted.json")
+    from_lnd_to_corelightning(file_path, "SNAPSHOTS/" + "converted_lntrafficanalysis_2019.json")
     # create_fake_snapshot(file_path, "pickhardt_12apr2022_fixed_const_fees.json")
     return
 

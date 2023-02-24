@@ -70,7 +70,7 @@ def plot_fee_per_millionth_distribution(data):
 
 
     plt.title("Distribution of Fee per millionth (millisatoshi) for Lightning Channels")
-    plt.xlabel("Base Fee (millisatoshi)")
+    plt.xlabel("Fee per millionth (millisatoshi)")
     plt.ylabel("Number of Channels")
 
     # Show plot

@@ -2,7 +2,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import os
 
-RESULTS_FILE = "results_10000trans_1000SAT_0mu_pickhardt_12apr2022_fixed_const_fees.csv"
+RESULTS_FILE = "results_10000trans_1000SAT_0mu_pickhardt_12apr2022_fixed.csv"
 
 
 
@@ -18,10 +18,13 @@ def print_info_results(df):
     return
 
 def apply_filters(df):
-    # df.loc[df['total_fee'] > 500_000, 'total_fee'] = 500_000
+    # df.loc[df['total_fee'] > 20_000_000, 'total_fee'] = 20_000_000
     # df = df.loc[df['degree'] > 20]
     # df = df.loc[df['total_fee'] >= 100]
+
     df = df.loc[df['routed_payments'] > 20]
+    df = df.loc[df['routed_payments'] != 28]
+
     # df = df.loc[df['routed_transactions'] <= 100]
     # df.loc[df['ratio'] > 0.0004, 'ratio'] = 0.0004
     # df = df.loc[df['ratio'] > 0.000005]
@@ -46,20 +49,20 @@ def main():
     df = apply_filters(df)
 
 
-    ax = df.plot(x='node', y='ratio',kind='bar')
-    plt.title("RATIO fee/capacity for each node")
+    ax = df.plot(x='node', y='total_fee',kind='bar')
+    plt.title("Total fee for each node")
     plt.suptitle("CAP of each node decreases (--->) - DESC")
     plt.xlabel('node')
-    plt.ylabel('total_fees/capacity')
+    plt.ylabel('total_fee for each node')
     # ax.set_xticklabels(df['node'],rotation=90, fontsize=4)
     ax.set_xticklabels(df['routed_payments'],rotation=90, fontsize=3)
 
-    # plt.figtext(0.15, 0.01, 'Filter applied: # routed payments > 20', fontsize=12, ha='left')
+    plt.figtext(0.15, 0.01, 'Filter applied: # routed payments > 20, removed outlier node: 02...ce76b', fontsize=12, ha='left')
 
 
     fig = ax.get_figure()
     # Just if you want to save the results in a file
-    # fig.savefig('my_plot.png')
+    fig.savefig('total_fee_mu_0_pickhardt_fixed_original.png')
     plt.show()
     return
 
