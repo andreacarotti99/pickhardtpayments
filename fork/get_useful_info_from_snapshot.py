@@ -1,9 +1,13 @@
 import os, json
 import statistics
-
 import pandas as pd
 from matplotlib import pyplot as plt
 
+def median_satoshis_channel(data):
+    channels = data['channels']
+    fees = [c['satoshis'] for c in channels]
+    median_fee = statistics.median(fees)
+    return median_fee
 
 def median_fee_per_millionth(data):
     channels = data['channels']
@@ -107,7 +111,7 @@ def plot_base_fee_distribution(data):
 
 def main():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_file_directory, "SNAPSHOTS/" + "converted.json")
+    file_path = os.path.join(current_file_directory, "SNAPSHOTS/" + "cosimo_19jan2023_converted.json")
     with open(file_path, 'r') as file:
         file_contents = file.read()
         data = json.loads(file_contents)
@@ -116,6 +120,7 @@ def main():
         print("Median base fee:", median_base_fee(data))
         print("Avg fee per millionth:", avg_fee_per_millionth(data))
         print("Median fee per millionth:", median_fee_per_millionth(data))
+        print(f"Median satoshis per channel: {median_satoshis_channel(data)}")
 
         '''
         print_channel_info('033ac2f9f7ff643c235cc247c521663924aff73b26b38118a6c6821460afcde1b3',

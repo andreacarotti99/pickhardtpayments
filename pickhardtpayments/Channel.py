@@ -86,5 +86,9 @@ class Channel:
     def short_channel_id(self):
         return self._cln_jsn[ChannelFields.SHORT_CHANNEL_ID]
 
+    @property
+    def last_update(self):
+        return self._cln_jsn[ChannelFields.LAST_UPDATE]
+
     def __str__(self):
         return str(self._cln_jsn)

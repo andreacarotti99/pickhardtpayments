@@ -53,15 +53,6 @@ class OracleLightningNetwork(ChannelGraph):
                 return False, channel
         return True, None
 
-    def nodes_capacities(self):
-        """ compute the capacities for each node in the graph and returns a dictionary with the nodes and their capacity"""
-        nodes_capacities = {}
-        for src, dest, channel in self.network.edges(data="channel"):
-            if src in nodes_capacities:
-                nodes_capacities[src] += channel.capacity
-            else:
-                nodes_capacities[src] = channel.capacity
-        return nodes_capacities
 
     def theoretical_maximum_payable_amount(self, source: str, destination: str, base_fee: int = DEFAULT_BASE_THRESHOLD):
         """

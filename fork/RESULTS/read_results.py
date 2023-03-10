@@ -6,9 +6,9 @@ from pickhardtpayments.pickhardtpayments import ChannelGraph, OracleLightningNet
 
 # INTERESTING: andamento \_/
 # RESULTS_FILE = "results_1000trans_1000SAT_0mu_pickhardt_12apr2022_fixed_const_fees_dist_weig.csv"
-FOLDER = "distribution_uniform"
+FOLDER = "distribution_weighted_by_capacity"
 # FOLDER = "distribution_weighted_by_capacity"
-RESULTS_FILE = "results_10000trans_1000SAT_0mu_pickhardt_12apr2022_fixed_dist_uniform.csv"
+RESULTS_FILE = "results_1000trans_1000SAT_0mu_preferential_attachment_14057_dist_weig_quadratic.csv"
 
 def print_info_results(df):
     print("Avg capacity of each node: " + str(df['capacity'].mean()))
@@ -25,7 +25,7 @@ def apply_filters(df):
     # df = df.loc[df['total_fee'] >= 100]
     # df = df.loc[df['node'] != "0294e9ad2727d623fb22870e32f167d4d014e2f7adccb0926802f0bd4d17959093"]
     # df = df.loc[df['routed_payments'] != 28]
-    # df = df.loc[df['routed_payments'] >= 5]
+    # df = df.loc[df['routed_payments'] >= 3]
     # df.loc[df['ratio'] > 0.0004, 'ratio'] = 0.0004
     # df = df.loc[df['ratio'] <= 0.001]
     # df = df.loc[df['capacity'] >= 25_000_000]
@@ -70,10 +70,16 @@ def main():
 
     df['ratio'] = df['total_fee'].divide(df['capacity'], fill_value=0)
 
-    # test
+    # Create a colum with routed_payments^2
     df = df.assign(new_routed_payments=df['routed_payments'] * df['routed_payments'])
+
+    # Create a column average fee per payment to get the average fee for each payment
     df = df.assign(avg_fee_per_payment=df['total_fee']/df['routed_payments'])
+
+    # Create a column 'new_fees' where we compute the expected fees earned by each node with the new number of routed payments
     df = df.assign(new_fees=df['new_routed_payments']*df['avg_fee_per_payment'])
+
+    # Create a column new ratio taking into account the expected new fees earned divided by the capacity of each node
     df = df.assign(new_ratio=df['new_fees'] / df['capacity'])
 
     # Applying function f(x) = x^2
@@ -95,14 +101,14 @@ def main():
     df = apply_filters(df)
 
     # ax = df.plot(x='node', y='ratio',kind='line')
-    ax = df.plot(x='node', y='ratio_prof', kind='bar')
+    ax = df.plot(x='node', y='ratio', kind='bar')
     plt.title("Ratio for each node")
     plt.suptitle("CAP of each node decreases (--->) - DESC")
     plt.xlabel('node')
     plt.ylabel('ratio for each node')
     plt.yscale('log')
     # ax.set_xticklabels(df['node'],rotation=90, fontsize=4)
-    # ax.set_xticklabels(df['routed_payments'],rotation=90, fontsize=6)
+    ax.set_xticklabels(df['routed_payments'],rotation=90, fontsize=3)
     # plt.figtext(0.15, 0.01, 'Filter applied: # routed payments > 20, removed outlier node: 02...ce76b', fontsize=12, ha='left')
     fig = ax.get_figure()
     # Just if you want to save the results in a file

@@ -68,7 +68,7 @@ def choose_src_and_dst(distribution: str, n_capacities : dict, uncertainity_netw
         src = uncertainity_network.get_random_node_uniform_distribution()
         dst = uncertainity_network.get_random_node_uniform_distribution()
         while dst == src:
-                dst = get_random_node_weighted_by_capacity(n_capacities)
+                dst = uncertainity_network.get_random_node_uniform_distribution()
     elif distribution == "weighted_by_capacity":
         src = get_random_node_weighted_by_capacity(n_capacities, dist_func)
         dst = get_random_node_weighted_by_capacity(n_capacities, dist_func)
@@ -88,8 +88,8 @@ def run_success_payments_simulation(payment_session: SyncSimulatedPaymentSession
                                     payments_amount: int = 1000,
                                     mu: int = 10,
                                     base: int = 1000,
-                                    distribution: str = "normal",
-                                    dist_func: str = "linear"):
+                                    distribution: str = "uniform",
+                                    dist_func=str):
     """
     Run a simulation of Pickhardt payments, every time there is an unsuccessful payment it retries.
     """
@@ -121,11 +121,11 @@ def run_success_payments_simulation(payment_session: SyncSimulatedPaymentSession
 
 def main():
     # SIMULATION PARAMETERS
-    payments_to_simulate = 5
-    payments_amount = 5000
+    payments_to_simulate = 1000
+    payments_amount = 1000
     mu = 0
     base = 20_000  # Base fee under which I add to the Uncertainty Graph the nodes (otherwise I ignore them)
-    snapshot_file = "cosimo_19jan2023_converted.json"
+    snapshot_file = "preferential_attachment_14057.json"
     distribution = "weighted_by_capacity"
     dist_func = "quadratic"
 
@@ -133,6 +133,7 @@ def main():
     # SIMULATION STARTS
     print(f"Creating channel graph from {snapshot_file}...")
     channel_graph = ChannelGraph("SNAPSHOTS/" + snapshot_file)
+    print(f"Created graph with {channel_graph.network.number_of_nodes()} nodes and {channel_graph.network.number_of_edges()} edges...")
     print("Creating Uncertainty Network...")
     uncertainty_network = UncertaintyNetwork(channel_graph, base)
     print("Creating Oracle Network...")

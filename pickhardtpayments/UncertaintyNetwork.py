@@ -26,6 +26,8 @@ class UncertaintyNetwork(ChannelGraph):
     def __init__(self, channel_graph: ChannelGraph, base_threshold):
         self._channel_graph = nx.MultiDiGraph()
         for src, dest, keys, channel in channel_graph.network.edges(data="channel", keys=True):
+            # print(channel)
+            # print(channel.cln_jsn)
             oracle_channel = UncertaintyChannel(channel)
             if channel.base_fee <= base_threshold:
                 self._channel_graph.add_edge(oracle_channel.src,
