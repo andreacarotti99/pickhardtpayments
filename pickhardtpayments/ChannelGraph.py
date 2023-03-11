@@ -330,6 +330,29 @@ class ChannelGraph:
     def get_capacity(self, node):
         return self.get_nodes_capacities()[node]
 
+    def delete_node(self, node):
+        """
+        remove the node from the graph and all its channels
+        """
+        try:
+            node_is_present = self.network[node]
+            print(f"Removing node: {node}...")
+        except Exception as e:
+            print(f"Node {node} not found...")
+            return
+        predecessors = list(self.network.predecessors(node))
+        for p in predecessors:
+            channel = self.get_channel_without_short_channel_id(p, node)
+            rev_channel = self.get_channel_without_short_channel_id(node, p)
+            # print(channel)
+            # print(rev_channel)
+
+            self.network.remove_edge(channel.src, channel.dest, key=channel.short_channel_id)
+            self.network.remove_edge(rev_channel.src, rev_channel.dest, key=rev_channel.short_channel_id)
+        self.network.remove_node(node)
+
+
+
 def generate_random_channel_id():
     rand1 = str(random.randint(100000, 999999))  # random 6-digit number
     rand2 = str(random.randint(1000, 9999))  # random 4-digit number

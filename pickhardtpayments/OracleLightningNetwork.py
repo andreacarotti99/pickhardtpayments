@@ -94,6 +94,7 @@ class OracleLightningNetwork(ChannelGraph):
             # print(settlement_channel)
             # print(return_settlement_channel)
 
+
             if settlement_channel.actual_liquidity > payment_amount:
                 # decrease channel balance in sending channel by amount
                 settlement_channel.actual_liquidity = settlement_channel.actual_liquidity - payment_amount
@@ -103,3 +104,8 @@ class OracleLightningNetwork(ChannelGraph):
                 raise Exception("""Channel liquidity on Channel {} is lower than payment amount.
                     \nPayment cannot settle.""".format(channel.short_channel_id))
         return 0
+
+    def get_liquidity(self, src: str, dest: str):
+        channel = self.get_channel_without_short_channel_id(src, dest)
+        print(channel)
+        return channel.actual_liquidity

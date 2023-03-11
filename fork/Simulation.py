@@ -170,3 +170,8 @@ class Simulation:
     @property
     def payments_ratios_per_node(self):
         return self._payments_ratios_per_node
+
+    @property
+    def oracle_lightning_network(self):
+        return self._oracle_lightning_network
+
