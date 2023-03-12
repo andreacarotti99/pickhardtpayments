@@ -1,6 +1,4 @@
-import json
 import random
-import time
 import networkx as nx
 
 from . import OracleLightningNetwork
@@ -254,9 +252,10 @@ class ChannelGraph:
         return list(self.network.successors(node))
 
     def create_channel(self, source, dest, is_announced, total_capacity_of_channel, flags, is_active, last_update, base_fee, ppm,
-                       cltv_delta, htlc_min_msat, htlc_max_msat):
+                       cltv_delta, htlc_min_msat, htlc_max_msat, channel_id=None):
 
-        channel_id = generate_random_channel_id()
+        if channel_id is None:
+            channel_id = generate_random_channel_id()
 
         channel = {
             "source": str(source),

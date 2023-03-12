@@ -107,5 +107,5 @@ class OracleLightningNetwork(ChannelGraph):
 
     def get_liquidity(self, src: str, dest: str):
         channel = self.get_channel_without_short_channel_id(src, dest)
-        print(channel)
+        # print(channel)
         return channel.actual_liquidity
