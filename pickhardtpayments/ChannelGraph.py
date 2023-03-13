@@ -29,6 +29,7 @@ class ChannelGraph:
         #$ lightning-cli listchannels > listchannels.json
 
         """
+        self._snapshot_file = lightning_cli_listchannels_json_file
 
         self._channel_graph = nx.MultiDiGraph()
         channels = self._get_channel_json(lightning_cli_listchannels_json_file)
@@ -350,6 +351,9 @@ class ChannelGraph:
             self.network.remove_edge(rev_channel.src, rev_channel.dest, key=rev_channel.short_channel_id)
         self.network.remove_node(node)
 
+    @property
+    def snapshot_file(self):
+        return self._snapshot_file
 
 
 def generate_random_channel_id():

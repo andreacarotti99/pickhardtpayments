@@ -21,6 +21,13 @@ class Simulation:
         self._oracle_lightning_network = OracleLightningNetwork(self._channel_graph)
         self._payment_session = SyncSimulatedPaymentSession(self._oracle_lightning_network, self._uncertainty_network, prune_network=False)
 
+        # At each new run these parameters get updated
+        self._payments_to_simulate = None,
+        self._payments_amount = None,
+        self._mu = None,
+        self._base = None,
+        self._distribution = None,
+        self._dist_func = None
 
     def run_success_payments_simulation(self,
                                         payments_to_simulate: int = 10,
@@ -28,10 +35,19 @@ class Simulation:
                                         mu: int = 10,
                                         base: int = 1000,
                                         distribution: str = "uniform",
-                                        dist_func=str):
+                                        dist_func: str = ""):
         """
         Run a simulation of Pickhardt payments, every time there is an unsuccessful payment it retries.
         """
+
+        self._payments_to_simulate = payments_to_simulate
+        self._payments_amount = payments_amount
+        self._mu = mu
+        self._base = base
+        self._distribution = distribution
+        self._dist_func = dist_func
+
+
 
         print(f"Starting simulation with {payments_to_simulate} payments of {payments_amount} sat.")
         print(f"mu = {mu}")
@@ -174,4 +190,29 @@ class Simulation:
     @property
     def oracle_lightning_network(self):
         return self._oracle_lightning_network
+
+    @property
+    def channel_graph(self):
+        return self._channel_graph
+
+    @property
+    def payments_to_simulate(self):
+        return self._payments_to_simulate
+    @property
+    def payments_amount(self):
+        return  self._payments_amount
+    @property
+    def mu(self):
+        return self._mu
+    @property
+    def base(self):
+        return self._base
+    @property
+    def distribution(self):
+        return self._distribution
+    @property
+    def dist_func(self):
+        return self._dist_func
+
+
 
