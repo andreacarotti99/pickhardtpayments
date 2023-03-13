@@ -15,8 +15,8 @@ class ReplicateBestStrategy:
                  payments_amount: int = 1000,
                  mu: int = 0,
                  base: int = 20_000,
-                 distribution: str = "uniform",
-                 dist_func: str = ""):
+                 distribution: str = "weighted_by_capacity",
+                 dist_func: str = "linear"):
         self._snapshot_file = str(snapshot_file)
         self._payments_to_simulate = payments_to_simulate
         self._payments_amount = payments_amount
@@ -32,8 +32,8 @@ class ReplicateBestStrategy:
         simulation_1.run_success_payments_simulation(self._payments_to_simulate, self._payments_amount, self._mu,
                                                      self._base, self._distribution, self._dist_func)
 
-        print(simulation_1.payments_fees_per_node)
-        print(simulation_1.payments_ratios_per_node)
+        # print(simulation_1.payments_fees_per_node)
+        # print(simulation_1.payments_ratios_per_node)
 
         highest_ratio_node = self.get_node_with_highest_ratio(simulation_1.payments_ratios_per_node)
         highest_capacity_node = self._channel_graph.get_highest_capacity_nodes(5)[0]
@@ -42,7 +42,7 @@ class ReplicateBestStrategy:
         # self.show_network()
 
         # The liquidity is not yet set, after the creation of the channel the oracle is not set
-        self.create_node_with_same_strategy(highest_ratio_node, "HCN",
+        self.create_node_with_same_strategy(highest_ratio_node, "HCN_COPY",
                                             self._channel_graph.get_capacity(highest_capacity_node),
                                             simulation_1.oracle_lightning_network)
 
@@ -63,6 +63,8 @@ class ReplicateBestStrategy:
         # print(simulation_2.payments_ratios_per_node)
 
         exportResults = ExportResults(simulation_2)
+        exportResults.substitute_node_name(highest_ratio_node, 'HRN')
+        exportResults.substitute_node_name(highest_capacity_node, 'HCN')
         exportResults.export_results()
 
         return
@@ -133,6 +135,7 @@ class ReplicateBestStrategy:
 
     def remove_and_connect(self, node, oracle: OracleLightningNetwork):
         neighbors = list(self._channel_graph.network.neighbors(node))
+        print(f"Creating the clique: removing {node} and connecting neighbors...")
         for i in tqdm(range(len(neighbors))):
             channel_i_node = self._channel_graph.get_channel_without_short_channel_id(neighbors[i], node)
             for j in range(i + 1, len(neighbors)):
