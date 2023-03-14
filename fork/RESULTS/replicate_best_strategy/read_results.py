@@ -4,12 +4,8 @@ import os
 from pickhardtpayments.fork.ComputeDemand import compute_C
 from pickhardtpayments.pickhardtpayments import ChannelGraph, OracleLightningNetwork
 
-# INTERESTING: andamento \_/
-# RESULTS_FILE = "results_1000trans_1000SAT_0mu_pickhardt_12apr2022_fixed_const_fees_dist_weig.csv"
-# FOLDER = "distribution_weighted_by_capacity"
-# FOLDER = "distribution_weighted_by_capacity"
-FOLDER = "replicate_best_strategy"
-RESULTS_FILE = "results_1000trans_1000SAT_0mu_pickhardt_12apr2022_fixed_dist_weig_linear.csv"
+
+RESULTS_FILE = "results_10trans_1000SAT_0mu_pickhardt_12apr2022_fixed_dist_unif_2.csv"
 
 def print_info_results(df):
     print("Avg capacity of each node: " + str(df['capacity'].mean()))
@@ -53,15 +49,11 @@ def setup_graphics():
 
 def read_file():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_file_directory, FOLDER + "/" + RESULTS_FILE)
+    file_path = os.path.join(current_file_directory, RESULTS_FILE)
     df = pd.read_csv(file_path)
     return df
 
 def main():
-    snapshot_file = "pickhardt_12apr2022_fixed.json"
-    channel_graph = ChannelGraph("../SNAPSHOTS/" + snapshot_file)
-    oracle_lightning_network = OracleLightningNetwork(channel_graph)
-    C = compute_C(oracle_lightning_network, "quadratic")
 
     # Setting up the size of the matplotlib graphics
     setup_graphics()
@@ -70,26 +62,6 @@ def main():
     df = read_file()
 
     df['ratio'] = df['total_fee'].divide(df['capacity'], fill_value=0)
-
-    # Create a colum with routed_payments^2
-    df = df.assign(new_routed_payments=df['routed_payments'] * df['routed_payments'])
-
-    # Create a column average fee per payment to get the average fee for each payment
-    df = df.assign(avg_fee_per_payment=df['total_fee']/df['routed_payments'])
-
-    # Create a column 'new_fees' where we compute the expected fees earned by each node with the new number of routed payments
-    df = df.assign(new_fees=df['new_routed_payments']*df['avg_fee_per_payment'])
-
-    # Create a column new ratio taking into account the expected new fees earned divided by the capacity of each node
-    df = df.assign(new_ratio=df['new_fees'] / df['capacity'])
-
-    # Applying function f(x) = x^2
-    df['f_capacity'] = df['capacity'].apply(f_df)
-
-    df = df.assign(demand_prof=C * df['f_capacity'])
-    df = df.assign(fees_prof=df['avg_fee_per_payment'] * df['demand_prof'])
-    df = df.assign(ratio_prof=df['fees_prof']/df['capacity'])
-
 
     df = df.sort_values(by='capacity', ascending=False)
 
@@ -109,7 +81,7 @@ def main():
     plt.ylabel('ratio for each node')
     plt.yscale('log')
     # ax.set_xticklabels(df['node'],rotation=90, fontsize=4)
-    ax.set_xticklabels(df['routed_payments'],rotation=90, fontsize=3)
+    ax.set_xticklabels(df['node'],rotation=90, fontsize=3)
     # plt.figtext(0.15, 0.01, 'Filter applied: # routed payments > 20, removed outlier node: 02...ce76b', fontsize=12, ha='left')
     fig = ax.get_figure()
     # Just if you want to save the results in a file

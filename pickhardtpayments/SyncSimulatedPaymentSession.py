@@ -289,7 +289,7 @@ class SyncSimulatedPaymentSession:
                 attempt.status = AttemptStatus.FAILED
                 attempt.empty_feeEarned_per_node()
 
-    def _evaluate_attempts(self, payment: Payment):
+    def _evaluate_attempts(self, payment: Payment, verbose=False):
         """
         helper function to collect statistics about attempts and print them
 
@@ -302,42 +302,48 @@ class SyncSimulatedPaymentSession:
         amt = 0
         arrived_attempts = []
         failed_attempts = []
-        print("\nStatistics about {} candidate onions:\n".format(len(payment.attempts)))
-        print("successful attempts:")
-        print("--------------------")
+        if verbose:
+            print("\nStatistics about {} candidate onions:\n".format(len(payment.attempts)))
+            print("successful attempts:")
+            print("--------------------")
         for arrived_attempt in payment.filter_attempts(AttemptStatus.ARRIVED):
             amt += arrived_attempt.amount
             total_fees += arrived_attempt.routing_fee / 1000.
             expected_sats_to_deliver += arrived_attempt.probability * arrived_attempt.amount
-            print(" p = {:6.2f}% amt: {:9} sats  hops: {} ppm: {:5}".format(
-                arrived_attempt.probability * 100, arrived_attempt.amount, len(arrived_attempt.path),
-                int(arrived_attempt.routing_fee * 1000 / arrived_attempt.amount)))
+
+            if verbose:
+                print(" p = {:6.2f}% amt: {:9} sats  hops: {} ppm: {:5}".format(
+                    arrived_attempt.probability * 100, arrived_attempt.amount, len(arrived_attempt.path),
+                    int(arrived_attempt.routing_fee * 1000 / arrived_attempt.amount)))
             paid_fees += arrived_attempt.routing_fee
 
-        print("\nfailed attempts:")
-        print("----------------")
+        if verbose:
+            print("\nfailed attempts:")
+            print("----------------")
         for failed_attempt in payment.filter_attempts(AttemptStatus.FAILED):
             amt += failed_attempt.amount
             total_fees += failed_attempt.routing_fee / 1000.
             expected_sats_to_deliver += failed_attempt.probability * failed_attempt.amount
-            print(" p = {:6.2f}% amt: {:9} sats  hops: {} ppm: {:5}".format(
-                failed_attempt.probability * 100, failed_attempt.amount, len(failed_attempt.path),
-                int(failed_attempt.routing_fee * 1000 / failed_attempt.amount)))
+            if verbose:
+                print(" p = {:6.2f}% amt: {:9} sats  hops: {} ppm: {:5}".format(
+                    failed_attempt.probability * 100, failed_attempt.amount, len(failed_attempt.path),
+                    int(failed_attempt.routing_fee * 1000 / failed_attempt.amount)))
             residual_amt += failed_attempt.amount
 
-        print("\nAttempt Summary:")
-        print("=================")
-        print("\nTried to deliver \t{:10} sats".format(amt))
-        fraction = expected_sats_to_deliver * 100. / amt
-        print("expected to deliver {:10} sats \t({:4.2f}%)".format(
-            int(expected_sats_to_deliver), fraction))
-        fraction = (amt - residual_amt) * 100. / (amt)
-        print("actually delivered {:10} sats \t({:4.2f}%)".format(
-            amt - residual_amt, fraction))
-        print("deviation: \t\t{:4.2f}".format(
-            (amt - residual_amt) / (expected_sats_to_deliver + 1)))
-        print("planned_fee: {:8.3f} sat".format(total_fees))
-        print("paid fees: {:8.3f} sat".format(paid_fees))
+        if verbose:
+            print("\nAttempt Summary:")
+            print("=================")
+            print("\nTried to deliver \t{:10} sats".format(amt))
+            fraction = expected_sats_to_deliver * 100. / amt
+            print("expected to deliver {:10} sats \t({:4.2f}%)".format(
+                int(expected_sats_to_deliver), fraction))
+            fraction = (amt - residual_amt) * 100. / (amt)
+            print("actually delivered {:10} sats \t({:4.2f}%)".format(
+                amt - residual_amt, fraction))
+            print("deviation: \t\t{:4.2f}".format(
+                (amt - residual_amt) / (expected_sats_to_deliver + 1)))
+            print("planned_fee: {:8.3f} sat".format(total_fees))
+            print("paid fees: {:8.3f} sat".format(paid_fees))
         return residual_amt, paid_fees, len(payment.attempts), len(failed_attempts)
 
     def get_feeEarned_per_node_successful_attempts(self, attempts: List[Attempt]):
@@ -379,7 +385,7 @@ class SyncSimulatedPaymentSession:
         self._uncertainty_network.activate_network_wide_uncertainty_reduction(
             n, self._oracle)
 
-    def pickhardt_pay(self, src, dest, amt, mu, base):
+    def pickhardt_pay(self, src, dest, amt, mu, base, verbose=False):
         """
         conduct one experiment! might need to call oracle.reset_uncertainty_network() first
         I could not put it here as some experiments require sharing of liquidity information
@@ -427,11 +433,11 @@ class SyncSimulatedPaymentSession:
             self._attempt_payments(sub_payment.attempts)
 
             # run some simple statistics and depict them
-            amt, paid_fees, num_paths, number_failed_paths = self._evaluate_attempts(
-                sub_payment)
+            amt, paid_fees, num_paths, number_failed_paths = self._evaluate_attempts(sub_payment, verbose)
 
-            print("Runtime of flow computation: {:4.2f} sec ".format(runtime))
-            print("\n================================================================\n")
+            if verbose:
+                print("Runtime of flow computation: {:4.2f} sec ".format(runtime))
+                print("\n================================================================\n")
 
             total_number_failed_paths += number_failed_paths
             total_fees += paid_fees
@@ -453,24 +459,29 @@ class SyncSimulatedPaymentSession:
                     return payment
             payment.successful = True
             payment.fee_per_node = self.get_feeEarned_per_node_successful_attempts(payment.attempts)
+            print(payment.fee_per_node)
+            print("Payment was successful")
+
             payment.routing_nodes = self.get_payment_routing_nodes(payment.attempts)
 
         payment.end_time = time.time()
 
         entropy_end = self._uncertainty_network.entropy()
-        print("SUMMARY:")
-        print("========")
-        print("Rounds of mcf-computations:\t", cnt)
-        print("Number of attempts made:\t", len(payment.attempts))
-        print("Number of failed attempts:\t", len(list(payment.filter_attempts(AttemptStatus.FAILED))))
-        print("Failure rate: {:4.2f}% ".format(
-            len(list(payment.filter_attempts(AttemptStatus.FAILED))) * 100. / len(payment.attempts)))
-        print("total Payment lifetime (including inefficient memory management): {:4.3f} sec".format(
-            payment.end_time - payment.start_time))
-        print("Learnt entropy: {:5.2f} bits".format(entropy_start - entropy_end))
-        print("fee for settlement of delivery: {:8.3f} sat --> {} ppm".format(
-            payment.settlement_fees/1000, int(payment.settlement_fees * 1000 / payment.total_amount)))
-        print("used mu:", mu)
+
+        if verbose:
+            print("SUMMARY:")
+            print("========")
+            print("Rounds of mcf-computations:\t", cnt)
+            print("Number of attempts made:\t", len(payment.attempts))
+            print("Number of failed attempts:\t", len(list(payment.filter_attempts(AttemptStatus.FAILED))))
+            print("Failure rate: {:4.2f}% ".format(
+                len(list(payment.filter_attempts(AttemptStatus.FAILED))) * 100. / len(payment.attempts)))
+            print("total Payment lifetime (including inefficient memory management): {:4.3f} sec".format(
+                payment.end_time - payment.start_time))
+            print("Learnt entropy: {:5.2f} bits".format(entropy_start - entropy_end))
+            print("fee for settlement of delivery: {:8.3f} sat --> {} ppm".format(
+                payment.settlement_fees/1000, int(payment.settlement_fees * 1000 / payment.total_amount)))
+            print("used mu:", mu)
 
         return payment
 

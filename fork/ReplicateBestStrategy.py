@@ -11,12 +11,12 @@ from pickhardtpayments.pickhardtpayments.ChannelGraph import generate_random_cha
 class ReplicateBestStrategy:
     def __init__(self,
                  snapshot_file: str = "pickhardt_12apr2022_fixed.json",
-                 payments_to_simulate: int = 10,
+                 payments_to_simulate: int = 1000,
                  payments_amount: int = 1000,
                  mu: int = 0,
                  base: int = 20_000,
-                 distribution: str = "weighted_by_capacity",
-                 dist_func: str = "linear"):
+                 distribution: str = "uniform",
+                 dist_func: str = ""):
         self._snapshot_file = str(snapshot_file)
         self._payments_to_simulate = payments_to_simulate
         self._payments_amount = payments_amount
@@ -28,6 +28,9 @@ class ReplicateBestStrategy:
 
     def run(self):
 
+        highest_capacity_node = self._channel_graph.get_highest_capacity_nodes(5)[0]
+
+
         simulation_1 = Simulation(self._channel_graph, self._base)
         simulation_1.run_success_payments_simulation(self._payments_to_simulate, self._payments_amount, self._mu,
                                                      self._base, self._distribution, self._dist_func)
@@ -36,7 +39,11 @@ class ReplicateBestStrategy:
         # print(simulation_1.payments_ratios_per_node)
 
         highest_ratio_node = self.get_node_with_highest_ratio(simulation_1.payments_ratios_per_node)
-        highest_capacity_node = self._channel_graph.get_highest_capacity_nodes(5)[0]
+
+        exportResults_1 = ExportResults(simulation_1)
+        exportResults_1.substitute_node_name(highest_ratio_node, 'HRN')
+        exportResults_1.substitute_node_name(highest_capacity_node, 'HCN')
+        exportResults_1.export_results("1")
 
         # 1) Initial network
         # self.show_network()
@@ -62,10 +69,9 @@ class ReplicateBestStrategy:
         # print(simulation_2.payments_fees_per_node)
         # print(simulation_2.payments_ratios_per_node)
 
-        exportResults = ExportResults(simulation_2)
-        exportResults.substitute_node_name(highest_ratio_node, 'HRN')
-        exportResults.substitute_node_name(highest_capacity_node, 'HCN')
-        exportResults.export_results()
+        exportResults_2 = ExportResults(simulation_2)
+        exportResults_2.substitute_node_name(highest_ratio_node, 'HRN')
+        exportResults_2.export_results("2")
 
         return
 
