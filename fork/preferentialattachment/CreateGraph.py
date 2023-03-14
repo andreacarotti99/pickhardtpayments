@@ -83,7 +83,7 @@ def create_snapshot(G):
         json.dump(json_data, f, indent=4)
 
 
-G = preferential_attachment_graph(10)
+G = preferential_attachment_graph(500)
 create_snapshot(G)
 pos = nx.spring_layout(G)
 node_sizes = [v * 5 for v in dict(G.degree()).values()]  # multiply the degree of the node by 10 to get the size of the node

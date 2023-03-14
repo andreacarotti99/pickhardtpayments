@@ -1,16 +1,15 @@
-import networkx as nx
-from matplotlib import pyplot as plt
 from tqdm import tqdm
 
 from pickhardtpayments.fork.ExportResults import ExportResults
 from pickhardtpayments.fork.Simulation import Simulation
+from pickhardtpayments.fork.VisualNetworkRepresentation import VisualNetworkRepresentation
 from pickhardtpayments.pickhardtpayments import ChannelGraph, OracleLightningNetwork, OracleChannel
 from pickhardtpayments.pickhardtpayments.ChannelGraph import generate_random_channel_id
 
 
 class ReplicateBestStrategy:
     def __init__(self,
-                 snapshot_file: str = "pickhardt_12apr2022_fixed.json",
+                 snapshot_file: str = "preferential_attachment_100.json",
                  payments_to_simulate: int = 1000,
                  payments_amount: int = 1000,
                  mu: int = 0,
@@ -30,7 +29,6 @@ class ReplicateBestStrategy:
 
         highest_capacity_node = self._channel_graph.get_highest_capacity_nodes(5)[0]
 
-
         simulation_1 = Simulation(self._channel_graph, self._base)
         simulation_1.run_success_payments_simulation(self._payments_to_simulate, self._payments_amount, self._mu,
                                                      self._base, self._distribution, self._dist_func)
@@ -41,25 +39,30 @@ class ReplicateBestStrategy:
         highest_ratio_node = self.get_node_with_highest_ratio(simulation_1.payments_ratios_per_node)
 
         exportResults_1 = ExportResults(simulation_1)
-        exportResults_1.substitute_node_name(highest_ratio_node, 'HRN')
-        exportResults_1.substitute_node_name(highest_capacity_node, 'HCN')
+        exportResults_1.substitute_node_name(highest_ratio_node, 'HRN_' + highest_ratio_node)
+        exportResults_1.substitute_node_name(highest_capacity_node, 'HCN_' + highest_capacity_node)
         exportResults_1.export_results("1")
 
         # 1) Initial network
-        # self.show_network()
+        visualNetworkRepresentation = VisualNetworkRepresentation(self._channel_graph)
+        visualNetworkRepresentation.show_network([highest_ratio_node, highest_capacity_node])
 
         # The liquidity is not yet set, after the creation of the channel the oracle is not set
         self.create_node_with_same_strategy(highest_ratio_node, "HCN_COPY",
                                             self._channel_graph.get_capacity(highest_capacity_node),
                                             simulation_1.oracle_lightning_network)
 
+        print(self._channel_graph.network.nodes())
+
         # 2) Showing the network after creating the node with the same strategy but capacity of the highest ratio node
-        # self.show_network()
+        visualNetworkRepresentation = VisualNetworkRepresentation(self._channel_graph)
+        visualNetworkRepresentation.show_network([highest_ratio_node, "HCN_COPY", highest_capacity_node])
 
         self.remove_and_connect(highest_capacity_node, simulation_1.oracle_lightning_network)
 
         # 3) Showing the network after removing the real high capacity node
-        # self.show_network()
+        visualNetworkRepresentation = VisualNetworkRepresentation(self._channel_graph)
+        visualNetworkRepresentation.show_network([highest_ratio_node, "HCN_COPY"])
 
         simulation_2 = Simulation(self._channel_graph, self._base)
         simulation_2.run_success_payments_simulation(self._payments_to_simulate, self._payments_amount, self._mu,
@@ -70,7 +73,7 @@ class ReplicateBestStrategy:
         # print(simulation_2.payments_ratios_per_node)
 
         exportResults_2 = ExportResults(simulation_2)
-        exportResults_2.substitute_node_name(highest_ratio_node, 'HRN')
+        exportResults_2.substitute_node_name(highest_ratio_node, 'HRN' + '_' + highest_ratio_node)
         exportResults_2.export_results("2")
 
         return
@@ -186,16 +189,6 @@ class ReplicateBestStrategy:
                                                      channel=oracle_channel_rev)
 
         self._channel_graph.delete_node(node)
-        return
-
-    def show_network(self):
-        pos = nx.spring_layout(self._channel_graph.network)
-        node_sizes = [v * 14 for v in dict(
-            self._channel_graph.network.degree()).values()]  # multiply the degree of the node by 10 to get the size of the node
-        nx.draw(self._channel_graph.network, pos, node_color='blue', node_size=node_sizes, edge_color='red', width=0.4)
-        labels = {n: str(n) for n in self._channel_graph.network.nodes()}
-        nx.draw_networkx_labels(self._channel_graph.network, pos, labels, font_size=6, font_color='grey')
-        plt.show()
         return
 
 
