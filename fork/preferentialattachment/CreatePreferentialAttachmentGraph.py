@@ -4,10 +4,7 @@ import random
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
-random.seed(1)
-
-
-def preferential_attachment_graph(n):
+def preferential_attachment_graph(num_of_nodes: int):
     # Create an empty graph
     G = nx.Graph()
     # Add the first two nodes with an edge between them
@@ -15,7 +12,7 @@ def preferential_attachment_graph(n):
     G.add_node(1)
     G.add_edge(0, 1)
     # Add the remaining n-2 nodes
-    for i in tqdm(range(2, n)):
+    for i in tqdm(range(2, num_of_nodes)):
         # Compute the sum of degrees of all nodes in the graph
         degree_sum = sum(dict(G.degree()).values())
         # Create a list of nodes and their corresponding degrees
@@ -82,9 +79,14 @@ def create_snapshot(G):
     with open('preferential_attachment_' + str(G.number_of_nodes()) + '.json', 'w') as f:
         json.dump(json_data, f, indent=4)
 
+    return
 
-G = preferential_attachment_graph(500)
+
+random.seed(1)
+G = preferential_attachment_graph(num_of_nodes=1000)
 create_snapshot(G)
+
+# Illustrating the graph G created in matplotlib
 pos = nx.spring_layout(G)
 node_sizes = [v * 5 for v in dict(G.degree()).values()]  # multiply the degree of the node by 10 to get the size of the node
 nx.draw(G, pos, node_color='blue', node_size=node_sizes, edge_color='gray', width=0.3)

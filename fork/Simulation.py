@@ -7,7 +7,7 @@ from pickhardtpayments.pickhardtpayments import SyncSimulatedPaymentSession, Unc
 
 class Simulation:
 
-    def __init__(self, channel_graph: ChannelGraph, base):
+    def __init__(self, channel_graph: ChannelGraph, base: int, oracle_lightning_network=None):
         self._payments_ratios_per_node = None
         self._payments_fees_per_transaction = None
         self._payments_routing_nodes_per_transaction = None
@@ -18,7 +18,12 @@ class Simulation:
         self._base = base
 
         self._uncertainty_network = UncertaintyNetwork(self._channel_graph, self._base)
-        self._oracle_lightning_network = OracleLightningNetwork(self._channel_graph)
+
+        if oracle_lightning_network is None:
+            self._oracle_lightning_network = OracleLightningNetwork(self._channel_graph)
+        else:
+            self._oracle_lightning_network = oracle_lightning_network
+
         self._payment_session = SyncSimulatedPaymentSession(self._oracle_lightning_network, self._uncertainty_network, prune_network=False)
 
         # At each new run these parameters get updated
@@ -29,13 +34,22 @@ class Simulation:
         self._distribution = None,
         self._dist_func = None
 
+    @property
+    def payment_session(self):
+        return self._payment_session
+
+    @property
+    def uncertainty_network(self):
+        return self._uncertainty_network
+
     def run_success_payments_simulation(self,
-                                        payments_to_simulate: int = 10,
+                                        payments_to_simulate: int = 1000,
                                         payments_amount: int = 1000,
                                         mu: int = 10,
                                         base: int = 1000,
                                         distribution: str = "uniform",
-                                        dist_func: str = ""):
+                                        dist_func: str = "",
+                                        verbose=False):
         """
         Run a simulation of Pickhardt payments, every time there is an unsuccessful payment it retries.
         """
@@ -66,7 +80,7 @@ class Simulation:
             src, dst = self._choose_src_and_dst(distribution, n_capacities, dist_func)
             print(f"Source: {src}\nDestination: {dst}")
             # perform the payment
-            payment = self._payment_session.pickhardt_pay(src, dst, payments_amount, mu, base)
+            payment = self._payment_session.pickhardt_pay(src, dst, payments_amount, mu, base, verbose)
             if payment.successful:
                 paymentNumber += 1
                 payments_fees.append(payment.fee_per_node)
@@ -145,13 +159,20 @@ class Simulation:
         returns the ratio between total fees earned by the SUM of ALL the nodes and the sum of the capacities
         of all the split (if any) of the node provided
         """
-        return self.get_fees(node) / self._channel_graph.get_capacity(node)
+        return self.get_fees(node) / self._channel_graph.get_expected_capacity(node)
 
     def _get_all_ratios(self):
         all_ratios = dict()
         for n in self._payments_fees_per_node.keys():
-            all_ratios[n] = self.get_fees(n) / self._channel_graph.get_capacity(n)
+            all_ratios[n] = self.get_fees(n) / self._channel_graph.get_expected_capacity(n)
         return all_ratios
+
+    def _get_highest_ratio_nodes(self, d):
+        """
+        Given a dictionary `d`, returns a list of keys sorted from the highest value to the lowest value.
+        """
+        sorted_keys = sorted(d, key=lambda k: d[k], reverse=True)
+        return sorted_keys
 
     def payments_fees_of_given_node(self, node):
         return self._payments_fees_per_node[node]
@@ -213,6 +234,13 @@ class Simulation:
     @property
     def dist_func(self):
         return self._dist_func
+
+    @property
+    def highest_ratio_nodes(self):
+        """
+        returns a list of the nodes ordered from the highest to the lowest ratio
+        """
+        return self._get_highest_ratio_nodes(self._payments_ratios_per_node)
 
 
 

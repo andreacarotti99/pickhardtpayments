@@ -5,7 +5,7 @@ from pickhardtpayments.fork.ComputeDemand import compute_C
 from pickhardtpayments.pickhardtpayments import ChannelGraph, OracleLightningNetwork
 
 
-RESULTS_FILE = "results_10trans_1000SAT_0mu_pickhardt_12apr2022_fixed_dist_unif_2.csv"
+RESULTS_FILE = "results_1000trans_1000SAT_0mu_cosimo_19jan2023_converted_dist_unif_1.csv"
 
 def print_info_results(df):
     print("Avg capacity of each node: " + str(df['capacity'].mean()))
@@ -30,6 +30,7 @@ def apply_filters(df):
     # df = df.loc[df['capacity'] <= 1_000_000_000]
     # df = df.head(56)
     # df = df.tail(56)
+    df['node'] = df['node'].str[:6]
     lowest_cap_nodes_mean = df.tail(10)['ratio'].mean() * 100
     lowest_cap_nodes_median = df.tail(10)['ratio'].median() * 100
     highest_cap_nodes_mean = df.head(10)['ratio'].mean() * 100
@@ -65,7 +66,7 @@ def main():
 
     df = df.sort_values(by='capacity', ascending=False)
 
-    df = df.head(600)
+    df = df.head(300)
 
     # Print info about the results
     print_info_results(df)

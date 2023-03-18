@@ -19,6 +19,7 @@ from ortools.graph import pywrapgraph
 import time
 import networkx as nx
 
+import copy
 
 
 def set_logger():
@@ -289,7 +290,7 @@ class SyncSimulatedPaymentSession:
                 attempt.status = AttemptStatus.FAILED
                 attempt.empty_feeEarned_per_node()
 
-    def _evaluate_attempts(self, payment: Payment, verbose=False):
+    def _evaluate_attempts(self, payment: Payment, verbose=False, cnt=0):
         """
         helper function to collect statistics about attempts and print them
 
@@ -330,13 +331,23 @@ class SyncSimulatedPaymentSession:
                     int(failed_attempt.routing_fee * 1000 / failed_attempt.amount)))
             residual_amt += failed_attempt.amount
 
+
+        fraction = expected_sats_to_deliver * 100. / amt
+
+        # cnt is equal to 0 when it is the first round (first attempt in trying to send the payment)
+        if cnt == 0:
+            payment.expectation_to_deliver_round_1 = fraction
+
         if verbose:
             print("\nAttempt Summary:")
             print("=================")
             print("\nTried to deliver \t{:10} sats".format(amt))
-            fraction = expected_sats_to_deliver * 100. / amt
+
             print("expected to deliver {:10} sats \t({:4.2f}%)".format(
                 int(expected_sats_to_deliver), fraction))
+
+
+
             fraction = (amt - residual_amt) * 100. / (amt)
             print("actually delivered {:10} sats \t({:4.2f}%)".format(
                 amt - residual_amt, fraction))
@@ -385,7 +396,7 @@ class SyncSimulatedPaymentSession:
         self._uncertainty_network.activate_network_wide_uncertainty_reduction(
             n, self._oracle)
 
-    def pickhardt_pay(self, src, dest, amt, mu, base, verbose=False):
+    def pickhardt_pay(self, src, dest, amt, mu, base, verbose):
         """
         conduct one experiment! might need to call oracle.reset_uncertainty_network() first
         I could not put it here as some experiments require sharing of liquidity information
@@ -433,7 +444,13 @@ class SyncSimulatedPaymentSession:
             self._attempt_payments(sub_payment.attempts)
 
             # run some simple statistics and depict them
-            amt, paid_fees, num_paths, number_failed_paths = self._evaluate_attempts(sub_payment, verbose)
+            amt, paid_fees, num_paths, number_failed_paths = self._evaluate_attempts(sub_payment, verbose, cnt)
+
+            # Setting expectation to deliver of the payment and not the sub_payment
+            if sub_payment.expectation_to_deliver_round_1 is not None:
+                payment.expectation_to_deliver_round_1 = round(sub_payment.expectation_to_deliver_round_1, 2)
+            else:
+                payment.expectation_to_deliver_round_1 = -1
 
             if verbose:
                 print("Runtime of flow computation: {:4.2f} sec ".format(runtime))
@@ -459,6 +476,7 @@ class SyncSimulatedPaymentSession:
                     return payment
             payment.successful = True
             payment.fee_per_node = self.get_feeEarned_per_node_successful_attempts(payment.attempts)
+            print("Payment fees per node:")
             print(payment.fee_per_node)
             print("Payment was successful")
 
@@ -484,5 +502,36 @@ class SyncSimulatedPaymentSession:
             print("used mu:", mu)
 
         return payment
+
+    def pickhardt_pay_half_channel_cap_forced_first_hop(self, src, dest, mu, base, verbose):
+
+        print(f"\nSending back half of the capacity of the new channels to {dest}")
+
+        src_connected_nodes = self._oracle.channel_graph.get_connected_nodes(src)
+
+        # Sending amount capacity/2 to src's neighbors
+        for node in src_connected_nodes:
+            channel = self._oracle.channel_graph.get_channel_without_short_channel_id(src, node)
+            amount_to_send = channel.capacity / 2
+            # mu = 0 because is just a one hop payment
+
+            print(f"Sending amount {amount_to_send} from {src} to {node}")
+            # Payment from source to neighbor
+            self.pickhardt_pay(src, node, amount_to_send, 0, base, verbose)
+
+            # Payment from neighbor to dest
+
+            print(f"Sending the same amount from {node} to {dest}")
+            p = self.pickhardt_pay(node, dest, amount_to_send, mu, base, verbose)
+            if p.routing_nodes is not None and src in p.routing_nodes:
+                print("Src was among the routing nodes!")
+
+        # TODO: removing the src and the copied node from the channel graph to avoid them to re-route the payments
+
+
+        return
+
+
+
 
 

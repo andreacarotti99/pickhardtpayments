@@ -1,17 +1,22 @@
 import os
 import time
 import pandas as pd
+from matplotlib import pyplot as plt
+
 from pickhardtpayments.fork.ComputeDemand import capacity, total_demand, compute_C, get_random_node_weighted_by_capacity
+from pickhardtpayments.fork.Simulation import Simulation
 from pickhardtpayments.pickhardtpayments import ChannelGraph
 from pickhardtpayments.pickhardtpayments import UncertaintyNetwork
 from pickhardtpayments.pickhardtpayments import OracleLightningNetwork
 from pickhardtpayments.pickhardtpayments import SyncSimulatedPaymentSession
 import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
+
 
 distributions = {
-        "uniform": "uniform",
-        "weighted_by_capacity": "weighted_by_capacity"
-    }
+    "uniform": "uniform",
+    "weighted_by_capacity": "weighted_by_capacity"
+}
 
 distribution_functions = {
     "linear": "linear",
@@ -19,6 +24,7 @@ distribution_functions = {
     "cubic": "cubic",
     "exponential": "exponential"
 }
+
 
 def export_results(df, payments_to_simulate, payments_amount, mu, snapshot_file, distribution, dist_func):
     """
@@ -32,6 +38,7 @@ def export_results(df, payments_to_simulate, payments_amount, mu, snapshot_file,
     df.to_csv("%s/%s.csv" % (output_dir, output_file), index=False)
     return
 
+
 def compute_routing_nodes(payments_routing_nodes):
     """
     takes a list of dictionaries containing the number of routed payments of the nodes
@@ -44,6 +51,7 @@ def compute_routing_nodes(payments_routing_nodes):
             else:
                 routing_nodes[node] = 1
     return routing_nodes
+
 
 def compute_fees_per_node(payments_fees):
     """
@@ -59,7 +67,8 @@ def compute_fees_per_node(payments_fees):
                 fees_per_node[node] = fee
     return fees_per_node
 
-def choose_src_and_dst(distribution: str, n_capacities : dict, uncertainity_network: UncertaintyNetwork, dist_func: str):
+
+def choose_src_and_dst(distribution: str, n_capacities: dict, uncertainity_network: UncertaintyNetwork, dist_func: str):
     """
     randomly chooses two nodes as source and destination of the transaction given a probability distribution
     """
@@ -68,12 +77,12 @@ def choose_src_and_dst(distribution: str, n_capacities : dict, uncertainity_netw
         src = uncertainity_network.get_random_node_uniform_distribution()
         dst = uncertainity_network.get_random_node_uniform_distribution()
         while dst == src:
-                dst = uncertainity_network.get_random_node_uniform_distribution()
+            dst = uncertainity_network.get_random_node_uniform_distribution()
     elif distribution == "weighted_by_capacity":
         src = get_random_node_weighted_by_capacity(n_capacities, dist_func)
         dst = get_random_node_weighted_by_capacity(n_capacities, dist_func)
         while dst == src:
-                dst = get_random_node_weighted_by_capacity(n_capacities, dist_func)
+            dst = get_random_node_weighted_by_capacity(n_capacities, dist_func)
 
     else:
         print("Distribution not found")
@@ -106,7 +115,7 @@ def run_success_payments_simulation(payment_session: SyncSimulatedPaymentSession
     payment_session.forget_information()
     n_capacities = oracle_lightning_network.nodes_capacities()
     while paymentNumber < payments_to_simulate:
-        print("*"*90)
+        print("*" * 90)
         print(f"Payment: {paymentNumber + 1}")
         src, dst = choose_src_and_dst(distribution, n_capacities, uncertainity_network, dist_func)
         print(f"Source: {src}\nDestination: {dst}")
@@ -121,19 +130,20 @@ def run_success_payments_simulation(payment_session: SyncSimulatedPaymentSession
 
 def main():
     # SIMULATION PARAMETERS
-    payments_to_simulate = 1000
+    payments_to_simulate = 1
     payments_amount = 1000
-    mu = 0
+    mu = 100_000
     base = 20_000  # Base fee under which I add to the Uncertainty Graph the nodes (otherwise I ignore them)
-    snapshot_file = "preferential_attachment_14057.json"
-    distribution = "weighted_by_capacity"
-    dist_func = "quadratic"
-
+    snapshot_file = "cosimo_19jan2023_converted.json"
+    distribution = "uniform"
+    dist_func = ""
 
     # SIMULATION STARTS
     print(f"Creating channel graph from {snapshot_file}...")
     channel_graph = ChannelGraph("SNAPSHOTS/" + snapshot_file)
     print(f"Created graph with {channel_graph.network.number_of_nodes()} nodes and {channel_graph.network.number_of_edges()} edges...")
+
+    '''
     print("Creating Uncertainty Network...")
     uncertainty_network = UncertaintyNetwork(channel_graph, base)
     print("Creating Oracle Network...")
@@ -141,16 +151,70 @@ def main():
     print("Initializing Payment Session...")
     payment_session = SyncSimulatedPaymentSession(oracle_lightning_network, uncertainty_network, prune_network=False)
     payment_session.forget_information()
+    '''
+
+    RENE = "03efccf2c383d7bf340da9a3f02e2c23104a0e4fe8ac1a880c8e2dc92fbdacd9df"
+    C_OTTO = "027ce055380348d7812d2ae7745701c9f93e70c1adeb2657f053f91df4f2843c71"
+
+    A = "0390b5d4492dc2f5318e5233ab2cebf6d48914881a33ef6a9c6bcdbb433ad986d0"
+    B = "03148dba0e3cb3c15250fb6a40d6456b109581570448aa72d0a4e1a56eaf81d970"
+
+    # SIMULATION STARTS
+
+    incr_mu = 0
+    incr_amt = 0
+
+    mus = [0, 10, 100, 500, 1000, 5000, 10_000, 100_000, 1_000_000]
+    amts = [1000, 10_000, 100_000, 1_000_000, 10_000_000]
+    fees = []
+    successes = []
+
+    tuples = []
 
 
 
-    # RENE = "03efccf2c383d7bf340da9a3f02e2c23104a0e4fe8ac1a880c8e2dc92fbdacd9df"
-    # C_OTTO = "027ce055380348d7812d2ae7745701c9f93e70c1adeb2657f053f91df4f2843c71"
+
+    for i in range(len(amts)):
+        for j in range(len(mus)):
+            uncertainty_network = UncertaintyNetwork(channel_graph, base)
+            oracle_lightning_network = OracleLightningNetwork(channel_graph)
+            payment_session = SyncSimulatedPaymentSession(oracle_lightning_network, uncertainty_network,
+                                                          prune_network=False)
+            p1 = payment_session.pickhardt_pay(src=A, dest=B, amt=amts[i], mu=mus[j], base=base, verbose=True)
+            payment_session.forget_information()
+
+            if p1.fee_per_node is not None:
+                tuples.append((amts[i], mus[j], sum(p1.fee_per_node.values()), p1.successful))
+            else:
+                tuples.append((amts[i], mus[j], -1, p1.successful))
+                break
+
+    print(tuples)
+    
+
+
+
+    columns = ['amount', 'mu', 'total_fees', 'successful']
+    df = pd.DataFrame(tuples, columns=columns)
+
+    df.to_csv('amount_fees_mu.csv', index=False)
+
+
+    print(df)
+
+
+
+
     # NODE_1_HOP_TO_OTTO = "02d4b432058ec31e38f6f35d22a487b7db04c4bf70f201f601b66f7b4358242b03"
     # NODE_2_HOP_TO_OTTO = "02c1321de5a127023115b90f33ae1244349269f5d18d3ea4014be697e700c07ccc"
-    # p1 = payment_session.pickhardt_pay(C, D, tested_amount, mu, base)
     # print("Demand")
     # print(total_demand(RENE, oracle_lightning_network))
+
+    '''
+    print(simulation.payments_fees_per_transaction)
+    '''
+
+    '''
 
     # Saving into a dictionary the capacities for each node (from oracle)
     nodes_capacities = oracle_lightning_network.nodes_capacities()
@@ -163,6 +227,8 @@ def main():
                                                                             payments_amount, mu, base,
                                                                             distribution,
                                                                             dist_func)
+                                                                            
+    
 
     # Saving into a dictionary the total fees for each node (that charged any fee)
     total_fees_per_node = compute_fees_per_node(payments_fees)
@@ -176,7 +242,9 @@ def main():
     df['routed_payments'] = df['node'].map(total_routed_payments_per_node)
     results = df
 
-    export_results(results, payments_to_simulate, payments_amount, mu, snapshot_file, distribution, dist_func)
+    # export_results(results, payments_to_simulate, payments_amount, mu, snapshot_file, distribution, dist_func)
+    
+    '''
 
     return
 

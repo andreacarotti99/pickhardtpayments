@@ -36,6 +36,8 @@ class Payment:
         self._fee_per_node = None
         self._routing_nodes = None
 
+        self._expectation_to_deliver_round_1 = None
+
     def __str__(self):
         return "Payment with {} attempts to deliver {} sats from {} to {}".format(len(self._attempts),
                                                                                   self._total_amount,
@@ -200,5 +202,12 @@ class Payment:
     def routing_nodes(self, routing_nodes):
         self._routing_nodes = routing_nodes
 
+    @property
+    def expectation_to_deliver_round_1(self):
+        return self._expectation_to_deliver_round_1
+
+    @expectation_to_deliver_round_1.setter
+    def expectation_to_deliver_round_1(self, fraction_exp_to_deliver):
+        self._expectation_to_deliver_round_1 = fraction_exp_to_deliver
 
 

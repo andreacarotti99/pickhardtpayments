@@ -6,10 +6,12 @@ from pickhardtpayments.fork.Simulation import Simulation
 class ExportResults(Simulation):
     def __init__(self, simulation: Simulation):
         self._simulation = simulation
-        print("Saving results into dataframe...")
+        print("\n\nSaving results into dataframe...")
         df = pd.DataFrame(self._simulation.payments_fees_per_node.items(), columns=['node', 'total_fee'])
         df['capacity'] = df['node'].map(self._simulation.channel_graph.get_nodes_capacities())
         df['routed_payments'] = df['node'].map(self._simulation.routed_transactions_per_node)
+        df['ratio'] = df['total_fee'] / df['capacity']
+
         self._results_df = df
 
     def export_results(self, simulation_number: str = "1"):

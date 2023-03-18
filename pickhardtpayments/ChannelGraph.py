@@ -255,6 +255,11 @@ class ChannelGraph:
     def create_channel(self, source, dest, is_announced, total_capacity_of_channel, flags, is_active, last_update, base_fee, ppm,
                        cltv_delta, htlc_min_msat, htlc_max_msat, channel_id=None):
 
+        """
+        create a channel between two nodes (it is double sided the new channel created) so creates
+        a channel A->B and also a channel B->A
+        """
+
         if channel_id is None:
             channel_id = generate_random_channel_id()
 
@@ -299,6 +304,7 @@ class ChannelGraph:
         channel = Channel(channel)
         channel_rev = Channel(channel_rev)
 
+        # Adding the channel to the channelGraph
         self.network.add_edge(
             channel.src, channel.dest, key=channel.short_channel_id, channel=channel)
         self.network.add_edge(
@@ -310,7 +316,6 @@ class ChannelGraph:
         """
         returns a list of the channels of the given node (ONLY ONE SIDE OF THE CHANNELS SO HALF OF THE CAPACITY)
         """
-
         connected_nodes = self.get_connected_nodes(node)
         channels = []
         for dst in connected_nodes:
@@ -327,7 +332,7 @@ class ChannelGraph:
                 nodes_capacities[src] = channel.capacity // 2
         return nodes_capacities
 
-    def get_capacity(self, node):
+    def get_expected_capacity(self, node):
         return self.get_nodes_capacities()[node]
 
     def delete_node(self, node):
@@ -350,6 +355,8 @@ class ChannelGraph:
             self.network.remove_edge(channel.src, channel.dest, key=channel.short_channel_id)
             self.network.remove_edge(rev_channel.src, rev_channel.dest, key=rev_channel.short_channel_id)
         self.network.remove_node(node)
+
+
 
     @property
     def snapshot_file(self):

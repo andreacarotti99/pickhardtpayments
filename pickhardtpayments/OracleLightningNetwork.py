@@ -37,6 +37,10 @@ class OracleLightningNetwork(ChannelGraph):
     def network(self):
         return self._network
 
+    @property
+    def channel_graph(self):
+        return self._channel_graph
+
     def send_onion(self, path, amt):
         """
 
@@ -109,3 +113,41 @@ class OracleLightningNetwork(ChannelGraph):
         channel = self.get_channel_without_short_channel_id(src, dest)
         # print(channel)
         return channel.actual_liquidity
+
+    def set_liquidity(self, src: str, dest: str, new_liquidity: float):
+        """
+        the liquidity between two nodes A and B is set such that if the total capacity of the channel is C and the new
+        liquidity from A to B is L then in the oracle liquidity(A->B) = L and liquidity(B->A) = C - L
+        """
+        channel = self._channel_graph.get_channel_without_short_channel_id(src=src, dest=dest)
+        rev_channel = self._channel_graph.get_channel_without_short_channel_id(src=dest, dest=src)
+        if new_liquidity > channel.capacity:
+            print("The new liquidity exceeds the channel capacity, liquidity not set")
+            return
+        else:
+            channel.actual_liquidity = new_liquidity
+            rev_channel.actual_liquidity = channel.capacity - new_liquidity
+
+    def get_total_actual_liquidity(self, node: str):
+        neighbors = self._channel_graph.get_connected_nodes(node=node)
+        print(neighbors)
+        total_actual_liquidity = 0
+        for neighbor in neighbors:
+            total_actual_liquidity += self.get_liquidity(node, neighbor)
+        return total_actual_liquidity
+
+    def close_channel(self, src: str, dest: str):
+        """
+        closes all the channels btw src and dest
+        IMPORTANT: both the channels in the ORACLE and in the CHANNELGRAPH are closed! (not just in one of the two)
+        """
+        if self.network.has_edge(src, dest):
+            edge_keys = list(self.network[src][dest].keys())
+            for edge_key in edge_keys:
+                self.network.remove_edge(src, dest, edge_key)
+                self.network.remove_edge(dest, src, edge_key)
+                self._channel_graph.network.remove_edge(src, dest, edge_key)
+                self._channel_graph.network.remove_edge(dest, src, edge_key)
+        else:
+            print(f"No edges between {src} and {dest}, 0 channels were closed")
+        return
