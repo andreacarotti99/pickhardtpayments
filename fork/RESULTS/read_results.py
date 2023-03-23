@@ -9,7 +9,7 @@ from pickhardtpayments.pickhardtpayments import ChannelGraph, OracleLightningNet
 # FOLDER = "distribution_weighted_by_capacity"
 # FOLDER = "distribution_weighted_by_capacity"
 FOLDER = "replicate_best_strategy"
-RESULTS_FILE = "results_1000trans_1000SAT_0mu_pickhardt_12apr2022_fixed_dist_weig_linear.csv"
+RESULTS_FILE = "results_1000trans_10000SAT_10mu_cosimo_19jan2023_converted_dist_weig_linear_11.csv"
 
 def print_info_results(df):
     print("Avg capacity of each node: " + str(df['capacity'].mean()))

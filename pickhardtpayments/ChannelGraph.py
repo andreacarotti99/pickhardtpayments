@@ -337,11 +337,11 @@ class ChannelGraph:
 
     def delete_node(self, node):
         """
-        remove the node from the graph and all its channels
+        remove the node from the graph and all its channels ONLY from ChannelGraph
         """
         try:
             node_is_present = self.network[node]
-            print(f"Removing node: {node}...")
+            print(f"Removing node: {node} from ChannelGraph...")
         except Exception as e:
             print(f"Node {node} not found...")
             return

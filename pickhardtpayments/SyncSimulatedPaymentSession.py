@@ -230,6 +230,7 @@ class SyncSimulatedPaymentSession:
         if status != self._min_cost_flow.OPTIMAL:
             print('There was an issue with the min cost flow input.')
             print(f'Status: {status}')
+
             # exit(1)
             issue_min_cost_flow = True
             return -1, -1, issue_min_cost_flow
@@ -503,34 +504,25 @@ class SyncSimulatedPaymentSession:
 
         return payment
 
-    def pickhardt_pay_half_channel_cap_forced_first_hop(self, src, dest, mu, base, verbose):
+    def direct_payment(self, src: str, dest: str, amount: float, oracle: OracleLightningNetwork):
 
-        print(f"\nSending back half of the capacity of the new channels to {dest}")
+        payment = Payment(src, dest, amount)
 
-        src_connected_nodes = self._oracle.channel_graph.get_connected_nodes(src)
-
-        # Sending amount capacity/2 to src's neighbors
-        for node in src_connected_nodes:
-            channel = self._oracle.channel_graph.get_channel_without_short_channel_id(src, node)
-            amount_to_send = channel.capacity / 2
-            # mu = 0 because is just a one hop payment
-
-            print(f"Sending amount {amount_to_send} from {src} to {node}")
-            # Payment from source to neighbor
-            self.pickhardt_pay(src, node, amount_to_send, 0, base, verbose)
-
-            # Payment from neighbor to dest
-
-            print(f"Sending the same amount from {node} to {dest}")
-            p = self.pickhardt_pay(node, dest, amount_to_send, mu, base, verbose)
-            if p.routing_nodes is not None and src in p.routing_nodes:
-                print("Src was among the routing nodes!")
-
-        # TODO: removing the src and the copied node from the channel graph to avoid them to re-route the payments
+        channel = oracle.get_channel_without_short_channel_id(src, dest)
+        rev_channel = oracle.get_channel_without_short_channel_id(dest, src)
 
 
-        return
-
+        if channel is not None:
+            if channel.actual_liquidity >= amount:
+                channel.actual_liquidity = channel.actual_liquidity - amount
+                rev_channel.actual_liquidity = rev_channel.actual_liquidity + amount
+                payment.successful = True
+                print(f"Payment from {src} to {dest} was successful")
+            else:
+                print("Unable to perform direct payment, the liquidity is not enough")
+                payment.successful = False
+                print(f"Payment from {src} to {dest} failed")
+        return payment
 
 
 

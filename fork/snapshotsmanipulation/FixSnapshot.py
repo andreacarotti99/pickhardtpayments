@@ -2,7 +2,7 @@ import json
 from tqdm import tqdm
 
 def main():
-    with open('SNAPSHOTS/pickhardt_12apr2022.json') as f:
+    with open('../SNAPSHOTS/pickhardt_12apr2022.json') as f:
         data = json.load(f)
     new_channels = []
     for channel in tqdm(data['channels']):
@@ -10,9 +10,9 @@ def main():
         if opposite_channel is not None:
             new_channels.append(channel)
     new_data = {'channels': new_channels}
-    with open('fixed.json', 'w') as f:
+    with open('aaaa.json', 'w') as f:
         json.dump(new_data, f, indent=2)
+    return
 
 
-if __name__ == "__main__":
-    main()
+main()

@@ -130,7 +130,7 @@ class OracleLightningNetwork(ChannelGraph):
 
     def get_total_actual_liquidity(self, node: str):
         neighbors = self._channel_graph.get_connected_nodes(node=node)
-        print(neighbors)
+        # print(neighbors)
         total_actual_liquidity = 0
         for neighbor in neighbors:
             total_actual_liquidity += self.get_liquidity(node, neighbor)
@@ -151,3 +151,27 @@ class OracleLightningNetwork(ChannelGraph):
         else:
             print(f"No edges between {src} and {dest}, 0 channels were closed")
         return
+
+    def delete_node(self, node):
+        """
+        remove the node and all its channels from the OracleLightningNetwork and from ChannelGraph
+        """
+        try:
+            node_is_present = self.network[node]
+            print(f"Removing node: {node} from Oracle...")
+        except Exception as e:
+            print(f"Node {node} not found...")
+            return
+        predecessors = list(self.network.predecessors(node))
+        for p in predecessors:
+            channel = self.get_channel_without_short_channel_id(p, node)
+            rev_channel = self.get_channel_without_short_channel_id(node, p)
+            # print(channel)
+            # print(rev_channel)
+
+            self._channel_graph.network.remove_edge(channel.src, channel.dest, key=channel.short_channel_id)
+            self._channel_graph.network.remove_edge(rev_channel.src, rev_channel.dest, key=rev_channel.short_channel_id)
+            self.network.remove_edge(channel.src, channel.dest, key=channel.short_channel_id)
+            self.network.remove_edge(rev_channel.src, rev_channel.dest, key=rev_channel.short_channel_id)
+        self.network.remove_node(node)
+        self._channel_graph.delete_node(node)

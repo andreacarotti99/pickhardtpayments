@@ -242,5 +242,12 @@ class Simulation:
         """
         return self._get_highest_ratio_nodes(self._payments_ratios_per_node)
 
+    @property
+    def routed_transactions_per_node(self):
+        """
+        returns a dictionary of the nodes with the number of routed transactions for each node
+        """
+        return self._routed_transactions_per_node
+
 
 
