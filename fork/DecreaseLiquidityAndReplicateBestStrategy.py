@@ -6,7 +6,7 @@ from pickhardtpayments.fork.VisualNetworkRepresentation import VisualNetworkRepr
 from pickhardtpayments.pickhardtpayments import ChannelGraph, OracleChannel, OracleLightningNetwork, \
     SyncSimulatedPaymentSession, UncertaintyNetwork, UncertaintyChannel
 
-
+# TODO: forcing the first hop of the send_back but by sending back the payment from the source (HRN) and not from the source neighbor's
 class DecreaseLiquidityAndReplicateBestStrategy:
     def __init__(self, snapshot_file: str = "cosimo_19jan2023_converted.json"):
         self._snapshot_file = str(snapshot_file)
@@ -122,8 +122,8 @@ class DecreaseLiquidityAndReplicateBestStrategy:
     def _send_with_split(self, src: str, dest: str, amt: float, session: SyncSimulatedPaymentSession, mu: int):
         p = session.pickhardt_pay(src=src, dest=dest, amt=amt, mu=5, base=self._base, verbose=False)
         if not p.successful:
-            self._send_with_split(src, dest, amt / 2, session, mu)
-            self._send_with_split(src, dest, amt / 2, session, mu)
+            self._send_with_split(src, dest, amt // 2, session, mu)
+            self._send_with_split(src, dest, amt // 2, session, mu)
 
     def _send_back_money_first_hop_forced(self, src: str, dest: str, percentage_of_chan_cap_to_send: float,
                                           oracle: OracleLightningNetwork, mu: int = 5):

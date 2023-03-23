@@ -4,7 +4,8 @@ import random
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
-def preferential_attachment_graph(num_of_nodes: int):
+
+def create_preferential_attachment_graph(num_of_nodes: int):
     # Create an empty graph
     G = nx.Graph()
     # Add the first two nodes with an edge between them
@@ -25,6 +26,7 @@ def preferential_attachment_graph(num_of_nodes: int):
         G.add_node(i)
         G.add_edge(i, node_degrees[selected_node][0])
     return G
+
 
 def create_snapshot(G):
     # create a list of channels
@@ -83,7 +85,7 @@ def create_snapshot(G):
 
 
 random.seed(1)
-G = preferential_attachment_graph(num_of_nodes=1000)
+G = create_preferential_attachment_graph(num_of_nodes=1000)
 create_snapshot(G)
 
 # Illustrating the graph G created in matplotlib
