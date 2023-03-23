@@ -67,7 +67,8 @@ class Simulation:
         print(f"mu = {mu}")
         print(f"base = {base}")
         print(f"distribution = {distribution}")
-        print(f"function f = {dist_func}")
+        if dist_func != "":
+            print(f"demand function f = {dist_func}")
 
         paymentNumber = 0
         payments_fees = []
