@@ -6,10 +6,8 @@ from pickhardtpayments.pickhardtpayments import ChannelGraph, OracleLightningNet
 
 # INTERESTING: andamento \_/
 # RESULTS_FILE = "results_1000trans_1000SAT_0mu_pickhardt_12apr2022_fixed_const_fees_dist_weig.csv"
-# FOLDER = "distribution_weighted_by_capacity"
-# FOLDER = "distribution_weighted_by_capacity"
-FOLDER = "replicate_best_strategy"
-RESULTS_FILE = "results_1000trans_10000SAT_10mu_cosimo_19jan2023_converted_dist_weig_linear_11.csv"
+
+RESULTS_FILE = "results_1000trans_1000SAT_0mu_pickhardt_12apr2022_fixed_const_fees_dist_weig.csv"
 
 def print_info_results(df):
     print("Avg capacity of each node: " + str(df['capacity'].mean()))
@@ -53,13 +51,13 @@ def setup_graphics():
 
 def read_file():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_file_directory, FOLDER + "/" + RESULTS_FILE)
+    file_path = os.path.join(current_file_directory, RESULTS_FILE)
     df = pd.read_csv(file_path)
     return df
 
 def main():
     snapshot_file = "pickhardt_12apr2022_fixed.json"
-    channel_graph = ChannelGraph("../SNAPSHOTS/" + snapshot_file)
+    channel_graph = ChannelGraph("../../SNAPSHOTS/" + snapshot_file)
     oracle_lightning_network = OracleLightningNetwork(channel_graph)
     C = compute_C(oracle_lightning_network, "quadratic")
 

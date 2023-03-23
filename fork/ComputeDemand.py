@@ -38,7 +38,8 @@ def f(c: float, dist_func: str):
     return
 
 def compute_C(graph: OracleLightningNetwork, dist_func: str):
-    C = sum(np.array([f(val, dist_func) for val in graph.nodes_capacities().values()]))
+    nodes_actual_capacities = graph.get_nodes_capacities()
+    C = sum(np.array([f(val, dist_func) for val in nodes_actual_capacities.values()]))
     return C
 
 def get_random_node_weighted_by_capacity(d, dist_func):
