@@ -3,8 +3,7 @@ import random
 from pickhardtpayments.fork.ExportResults import ExportResults
 from pickhardtpayments.fork.Simulation import Simulation
 from pickhardtpayments.fork.VisualNetworkRepresentation import VisualNetworkRepresentation
-from pickhardtpayments.pickhardtpayments import ChannelGraph, OracleChannel, OracleLightningNetwork, \
-    SyncSimulatedPaymentSession, UncertaintyNetwork, UncertaintyChannel
+from pickhardtpayments.pickhardtpayments import ChannelGraph, OracleChannel, OracleLightningNetwork, SyncSimulatedPaymentSession, UncertaintyNetwork
 
 # TODO: forcing the first hop of the send_back but by sending back the payment from the source (HRN) and not from the source neighbor's
 class DecreaseLiquidityAndReplicateBestStrategy:
@@ -62,13 +61,17 @@ class DecreaseLiquidityAndReplicateBestStrategy:
         exportResults_1.export_results("2")
 
     def run(self):
+
+        # self._channel_graph.transform_channel_graph_to_simpler(3000)
+
         HCN = self._channel_graph.get_highest_capacity_nodes(1)[0]
+
         THIEF = "THIEF"
         s1 = Simulation(self._channel_graph, self._base)
         s1.run_success_payments_simulation(
-            payments_to_simulate=10_000,
+            payments_to_simulate=1000,
             payments_amount=10_000,
-            mu=100,
+            mu=1000,
             base=self._base,
             distribution="weighted_by_capacity",
             dist_func="linear",
@@ -77,7 +80,7 @@ class DecreaseLiquidityAndReplicateBestStrategy:
 
         # HRN = s1.highest_ratio_nodes[0]
 
-        HRN = self._compute_best_performing_node(s1, routed_payment_threshold=40)
+        HRN = self._compute_best_performing_node(s1, routed_payment_threshold=10)
 
 
         exportResults_1 = ExportResults(s1)
@@ -89,13 +92,13 @@ class DecreaseLiquidityAndReplicateBestStrategy:
         HRN_expected_liquidity = self._channel_graph.get_expected_capacity(HRN)
         capacity_to_remove_from_HCN = 2 * HRN_expected_liquidity
         self.close_channels_up_to_amount(HCN, capacity_to_remove_from_HCN, s1.oracle_lightning_network)
-        self._send_back_money_first_hop_forced(src=THIEF, dest=HCN, percentage_of_chan_cap_to_send=0.5, oracle=s1.oracle_lightning_network, mu=10)
+        self._send_back_money_first_hop_forced(src=THIEF, dest=HCN, percentage_of_chan_cap_to_send=0.3, oracle=s1.oracle_lightning_network, mu=10)
 
         s2 = Simulation(self._channel_graph, self._base)  # Creates a new UncertaintyNetwork based on the channelGraph
         s2.run_success_payments_simulation(
-            payments_to_simulate=10_000,
+            payments_to_simulate=1000,
             payments_amount=10_000,
-            mu=100,
+            mu=1000,
             base=self._base,
             distribution="weighted_by_capacity",
             dist_func="linear",

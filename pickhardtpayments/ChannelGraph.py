@@ -1,5 +1,6 @@
 import random
 import networkx as nx
+import numpy as np
 
 from . import OracleLightningNetwork
 from .Channel import Channel
@@ -42,6 +43,11 @@ class ChannelGraph:
     @property
     def network(self):
         return self._channel_graph
+
+    @network.setter
+    def network(self, new_network):
+        self._channel_graph = new_network
+
 
     def get_channel(self, src: str, dest: str, short_channel_id: str):
         """
@@ -361,6 +367,24 @@ class ChannelGraph:
     @property
     def snapshot_file(self):
         return self._snapshot_file
+
+    def transform_channel_graph_to_simpler(self, tentative_nodes_to_keep: int):
+        # This is to get the bigger connected component in the network
+        scc = list(nx.strongly_connected_components(self.network))
+        max_scc = max(scc, key=len)
+        for c in scc:
+            if c != max_scc:
+                self.network.remove_nodes_from(c)
+
+        # This is to actually simplify the network
+        nodes = list(self.network.nodes())
+        selected_nodes = np.random.choice(nodes, size=tentative_nodes_to_keep, replace=False)
+        subgraph = self.network.subgraph(selected_nodes)
+        connected_components = list(nx.strongly_connected_components(subgraph))
+        largest_cc = subgraph.subgraph(max(connected_components, key=len))
+        self.network = largest_cc
+        print(f"The network was modified and now has {largest_cc.number_of_nodes()} nodes")
+        return
 
 
 def generate_random_channel_id():
