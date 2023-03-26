@@ -201,8 +201,3 @@ class ReplicateBestStrategy:
 
         self._channel_graph.delete_node(node)
         return
-
-
-random.seed(1)
-replicateBestStrategy = ReplicateBestStrategy()
-replicateBestStrategy.run()

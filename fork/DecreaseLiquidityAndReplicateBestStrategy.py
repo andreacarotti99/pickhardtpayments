@@ -1,9 +1,10 @@
 import random
-
 from pickhardtpayments.fork.ExportResults import ExportResults
 from pickhardtpayments.fork.Simulation import Simulation
 from pickhardtpayments.fork.VisualNetworkRepresentation import VisualNetworkRepresentation
-from pickhardtpayments.pickhardtpayments import ChannelGraph, OracleChannel, OracleLightningNetwork, SyncSimulatedPaymentSession, UncertaintyNetwork
+from pickhardtpayments.pickhardtpayments import ChannelGraph, OracleChannel, OracleLightningNetwork, \
+    SyncSimulatedPaymentSession, UncertaintyNetwork
+
 
 # TODO: forcing the first hop of the send_back but by sending back the payment from the source (HRN) and not from the source neighbor's
 class DecreaseLiquidityAndReplicateBestStrategy:
@@ -60,7 +61,7 @@ class DecreaseLiquidityAndReplicateBestStrategy:
         exportResults_1.substitute_node_name(HCN, 'HCN' + '_' + HCN)
         exportResults_1.export_results("2")
 
-    def run(self):
+    def run(self, mu: int, num_of_payments: int):
 
         # self._channel_graph.transform_channel_graph_to_simpler(3000)
 
@@ -69,9 +70,9 @@ class DecreaseLiquidityAndReplicateBestStrategy:
         THIEF = "THIEF"
         s1 = Simulation(self._channel_graph, self._base)
         s1.run_success_payments_simulation(
-            payments_to_simulate=1000,
+            payments_to_simulate=num_of_payments,
             payments_amount=10_000,
-            mu=1000,
+            mu=mu,
             base=self._base,
             distribution="weighted_by_capacity",
             dist_func="linear",
@@ -82,7 +83,6 @@ class DecreaseLiquidityAndReplicateBestStrategy:
 
         HRN = self._compute_best_performing_node(s1, routed_payment_threshold=10)
 
-
         exportResults_1 = ExportResults(s1)
         exportResults_1.substitute_node_name(HRN, 'HRN' + '_' + HRN)
         exportResults_1.substitute_node_name(HCN, 'HCN' + '_' + HCN)
@@ -92,13 +92,14 @@ class DecreaseLiquidityAndReplicateBestStrategy:
         HRN_expected_liquidity = self._channel_graph.get_expected_capacity(HRN)
         capacity_to_remove_from_HCN = 2 * HRN_expected_liquidity
         self.close_channels_up_to_amount(HCN, capacity_to_remove_from_HCN, s1.oracle_lightning_network)
-        self._send_back_money_first_hop_forced(src=THIEF, dest=HCN, percentage_of_chan_cap_to_send=0.3, oracle=s1.oracle_lightning_network, mu=10)
+        self._send_back_money_first_hop_forced(src=THIEF, dest=HCN, percentage_of_chan_cap_to_send=0.25,
+                                               oracle=s1.oracle_lightning_network, mu=10)
 
         s2 = Simulation(self._channel_graph, self._base)  # Creates a new UncertaintyNetwork based on the channelGraph
         s2.run_success_payments_simulation(
-            payments_to_simulate=1000,
+            payments_to_simulate=num_of_payments,
             payments_amount=10_000,
-            mu=1000,
+            mu=mu,
             base=self._base,
             distribution="weighted_by_capacity",
             dist_func="linear",
@@ -115,12 +116,12 @@ class DecreaseLiquidityAndReplicateBestStrategy:
     def _compute_best_performing_node(self, simulation: Simulation, routed_payment_threshold: int):
 
         routed_payments_per_node = simulation.routed_transactions_per_node
-        nodes_with_more_than_thres_routed_paym = {k: v for k, v in routed_payments_per_node.items() if v > routed_payment_threshold}
+        nodes_with_more_than_thres_routed_paym = {k: v for k, v in routed_payments_per_node.items() if
+                                                  v > routed_payment_threshold}
         for i, node in enumerate(simulation.highest_ratio_nodes):
             if node in nodes_with_more_than_thres_routed_paym:
                 print(f"Best performing node is the {i} in the Highest Ratio Nodes")
                 return node
-
 
     def _send_with_split(self, src: str, dest: str, amt: float, session: SyncSimulatedPaymentSession, mu: int):
         p = session.pickhardt_pay(src=src, dest=dest, amt=amt, mu=5, base=self._base, verbose=False)
@@ -145,7 +146,8 @@ class DecreaseLiquidityAndReplicateBestStrategy:
         for i, neighbor in enumerate(src_neighbors):
             channel = self._channel_graph.get_channel_without_short_channel_id(src, neighbor)
             print(f"Attempting payment from neighbor {i + 1}/{len(src_neighbors)} to dest")
-            self._send_with_split(src=neighbor, dest=dest, amt=(channel.capacity * percentage_of_chan_cap_to_send), session=session, mu=mu)
+            self._send_with_split(src=neighbor, dest=dest, amt=(channel.capacity * percentage_of_chan_cap_to_send),
+                                  session=session, mu=mu)
         return
 
     def close_channels_up_to_amount(self, node: str, threshold_to_reach: float, oracle: OracleLightningNetwork):
@@ -260,4 +262,4 @@ class DecreaseLiquidityAndReplicateBestStrategy:
 
 
 decreaseLiquidityAndReplicateBestStrategy = DecreaseLiquidityAndReplicateBestStrategy()
-decreaseLiquidityAndReplicateBestStrategy.run()
+decreaseLiquidityAndReplicateBestStrategy.run(mu=10, num_of_payments=1000)

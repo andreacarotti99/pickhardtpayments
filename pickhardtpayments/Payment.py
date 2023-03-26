@@ -24,6 +24,7 @@ class Payment:
     def __init__(self, sender, receiver, total_amount: int = 1):
         """Constructor method
         """
+        self._final_payment_fees = None
         self._successful = False
         self._ppm = None
         self._fee = None
@@ -209,5 +210,13 @@ class Payment:
     @expectation_to_deliver_round_1.setter
     def expectation_to_deliver_round_1(self, fraction_exp_to_deliver):
         self._expectation_to_deliver_round_1 = fraction_exp_to_deliver
+        
+    @property
+    def final_payment_fees(self):
+        return self._final_payment_fees
+    
+    @final_payment_fees.setter
+    def final_payment_fees(self, fees):
+        self._final_payment_fees = fees
 
 

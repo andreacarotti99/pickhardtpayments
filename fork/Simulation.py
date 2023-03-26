@@ -8,6 +8,7 @@ from pickhardtpayments.pickhardtpayments import SyncSimulatedPaymentSession, Unc
 class Simulation:
 
     def __init__(self, channel_graph: ChannelGraph, base: int, oracle_lightning_network=None):
+        self._final_payment_fees_list = None
         self._payments_ratios_per_node = None
         self._payments_fees_per_transaction = None
         self._payments_routing_nodes_per_transaction = None
@@ -71,8 +72,9 @@ class Simulation:
             print(f"demand function f = {dist_func}")
 
         paymentNumber = 0
-        payments_fees = []
+        payments_fees_per_node_list = []
         payments_routing_nodes = []
+        final_payment_fees_list = []
         self._payment_session.forget_information()
         n_capacities = self._channel_graph.get_nodes_capacities()
         while paymentNumber < payments_to_simulate:
@@ -84,11 +86,18 @@ class Simulation:
             payment = self._payment_session.pickhardt_pay(src, dst, payments_amount, mu, base, verbose)
             if payment.successful:
                 paymentNumber += 1
-                payments_fees.append(payment.fee_per_node)
+                payments_fees_per_node_list.append(payment.fee_per_node)
                 payments_routing_nodes.append(payment.routing_nodes)
 
-        self.payments_fees_per_transaction = payments_fees
+                fees_list = [value for value in payment.fee_per_node.values()]
+                payment.final_payment_fees = sum(fees_list) if fees_list else 0
+                final_payment_fees_list.append(payment.final_payment_fees)
+                # print("fees:", payment.settlement_fees)
+                # print("correct fees", payment.final_payment_fees)
+
+        self.payments_fees_per_transaction = payments_fees_per_node_list
         self.payments_routing_nodes_per_transaction = payments_routing_nodes
+        self._final_payment_fees_list = final_payment_fees_list
         return
 
     def _choose_src_and_dst(self, distribution: str, n_capacities: dict, dist_func: str):
@@ -249,6 +258,14 @@ class Simulation:
         returns a dictionary of the nodes with the number of routed transactions for each node
         """
         return self._routed_transactions_per_node
+    
+    @property
+    def final_payment_fees_list(self):
+        return self._final_payment_fees_list
+
+    @final_payment_fees_list.setter
+    def final_payment_fees_list(self, fees_list):
+        self._final_payment_fees_list = fees_list
 
 
 
