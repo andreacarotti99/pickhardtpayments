@@ -5,7 +5,7 @@ from pickhardtpayments.fork.ComputeDemand import compute_C
 from pickhardtpayments.pickhardtpayments import ChannelGraph, OracleLightningNetwork
 
 
-RESULTS_FILE = "complete/results_10000trans_10000SAT_100mu_cosimo_19jan2023_converted_dist_weig_linear_1.csv"
+RESULTS_FILE = "decrease_liquidity_send_paym_and_replicate/results_1000trans_10000SAT_10mu_cosimo_19jan2023_converted_dist_weig_linear_1.csv"
 
 def print_info_results(df):
     print("Avg capacity of each node: " + str(df['capacity'].mean()))
@@ -67,7 +67,6 @@ def main():
     df = df.sort_values(by='capacity', ascending=False)
 
     df = df.head(400)
-
     # Print info about the results
     print_info_results(df)
 

@@ -92,7 +92,7 @@ class DecreaseLiquidityAndReplicateBestStrategy:
         HRN_expected_liquidity = self._channel_graph.get_expected_capacity(HRN)
         capacity_to_remove_from_HCN = 2 * HRN_expected_liquidity
         self.close_channels_up_to_amount(HCN, capacity_to_remove_from_HCN, s1.oracle_lightning_network)
-        self._send_back_money_first_hop_forced(src=THIEF, dest=HCN, percentage_of_chan_cap_to_send=0.25,
+        self._send_back_money_first_hop_forced(src=THIEF, dest=HCN, percentage_of_chan_cap_to_send=0.1,
                                                oracle=s1.oracle_lightning_network, mu=10)
 
         s2 = Simulation(self._channel_graph, self._base)  # Creates a new UncertaintyNetwork based on the channelGraph
@@ -262,4 +262,4 @@ class DecreaseLiquidityAndReplicateBestStrategy:
 
 
 decreaseLiquidityAndReplicateBestStrategy = DecreaseLiquidityAndReplicateBestStrategy()
-decreaseLiquidityAndReplicateBestStrategy.run(mu=10, num_of_payments=1000)
+decreaseLiquidityAndReplicateBestStrategy.run(mu=0, num_of_payments=1000)
