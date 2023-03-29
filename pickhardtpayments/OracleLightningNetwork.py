@@ -175,3 +175,19 @@ class OracleLightningNetwork(ChannelGraph):
             self.network.remove_edge(rev_channel.src, rev_channel.dest, key=rev_channel.short_channel_id)
         self.network.remove_node(node)
         self._channel_graph.delete_node(node)
+        return
+
+    def print_node_info(self, node: str):
+        try:
+            node_is_present = self.network[node]
+            print(f"Channels of node: {node}")
+            successors = list(self.network.successors(node))
+
+            for p in successors:
+                channel = self.get_channel_without_short_channel_id(node, p)
+                print(f"|___ {p}: liquidity: {channel.actual_liquidity}/{channel.capacity}")
+        except Exception as e:
+            print(e)
+            print(f"Node {node} not found...")
+            return
+        return

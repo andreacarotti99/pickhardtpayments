@@ -258,6 +258,16 @@ class ChannelGraph:
     def get_connected_nodes(self, node):
         return list(self.network.successors(node))
 
+    def _generate_random_channel_id(self):
+        """
+        creates a random channel id for a newly generated channel
+        """
+        rand1 = str(random.randint(100000, 999999))  # random 6-digit number
+        rand2 = str(random.randint(1000, 9999))  # random 4-digit number
+        rand3 = str(random.randint(1, 9))  # random 1-digit number
+        return f"{rand1}x{rand2}x{rand3}"
+
+
     def create_channel(self, source, dest, is_announced, total_capacity_of_channel, flags, is_active, last_update, base_fee, ppm,
                        cltv_delta, htlc_min_msat, htlc_max_msat, channel_id=None):
 
@@ -265,10 +275,8 @@ class ChannelGraph:
         create a channel between two nodes (it is double sided the new channel created) so creates
         a channel A->B and also a channel B->A
         """
-
         if channel_id is None:
-            channel_id = generate_random_channel_id()
-
+            channel_id = self._generate_random_channel_id()
         channel = {
             "source": str(source),
             "destination": str(dest),
@@ -287,7 +295,6 @@ class ChannelGraph:
             "htlc_maximum_msat": htlc_max_msat,
             "features": ""
         }
-
         channel_rev = {
             "source": str(dest),
             "destination": str(source),
@@ -306,16 +313,27 @@ class ChannelGraph:
             "htlc_maximum_msat": htlc_max_msat,
             "features": ""
         }
-
         channel = Channel(channel)
         channel_rev = Channel(channel_rev)
-
         # Adding the channel to the channelGraph
         self.network.add_edge(
             channel.src, channel.dest, key=channel.short_channel_id, channel=channel)
         self.network.add_edge(
             channel_rev.src, channel_rev.dest, key=channel_rev.short_channel_id, channel=channel_rev)
+        return
 
+    def replicate_node(self, node_to_copy: str, new_node_id: str):
+        connected_channels = self.get_connected_channels(node_to_copy)
+        for channel in connected_channels:
+            channel_id = self._generate_random_channel_id()
+            self.create_channel(
+                new_node_id,
+                channel.dest,
+                channel.is_announced,
+                channel.capacity,  # with channel.capacity we create a full copy of the copied node
+                channel.flags, channel.is_active, channel.last_update, channel.base_fee, channel.ppm,
+                channel.cltv_delta, channel.htlc_min_msat, channel.htlc_max_msat, channel_id
+            )
         return
 
     def get_connected_channels(self, node):
@@ -385,12 +403,4 @@ class ChannelGraph:
         self.network = largest_cc
         print(f"The network was modified and now has {largest_cc.number_of_nodes()} nodes")
         return
-
-
-def generate_random_channel_id():
-    rand1 = str(random.randint(100000, 999999))  # random 6-digit number
-    rand2 = str(random.randint(1000, 9999))  # random 4-digit number
-    rand3 = str(random.randint(1, 9))  # random 1-digit number
-    return f"{rand1}x{rand2}x{rand3}"
-
 
