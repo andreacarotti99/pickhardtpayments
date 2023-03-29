@@ -3,9 +3,10 @@ from pickhardtpayments.pickhardtpayments import ChannelGraph
 
 base = 20_000
 channel_graph = ChannelGraph("../fork/SNAPSHOTS/" + "cosimo_19jan2023_converted.json")
+channel_graph.transform_channel_graph_to_simpler(1000)
 s = Simulation(channel_graph, base)
 s.run_success_payments_simulation(
-    payments_to_simulate=10,
+    payments_to_simulate=10000,
     payments_amount=10_000,
     mu=1000,
     base=base,

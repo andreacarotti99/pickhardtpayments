@@ -1,4 +1,6 @@
 import os
+import time
+
 import pandas as pd
 from pickhardtpayments.fork.ComputeDemand import get_random_node_weighted_by_capacity
 from pickhardtpayments.pickhardtpayments import SyncSimulatedPaymentSession, UncertaintyNetwork, OracleLightningNetwork, \
@@ -55,6 +57,8 @@ class Simulation:
         Run a simulation of Pickhardt payments, every time there is an unsuccessful payment it retries.
         """
 
+        start = time.time()
+
         self._payments_to_simulate = payments_to_simulate
         self._payments_amount = payments_amount
         self._mu = mu
@@ -98,6 +102,8 @@ class Simulation:
         self.payments_fees_per_transaction = payments_fees_per_node_list
         self.payments_routing_nodes_per_transaction = payments_routing_nodes
         self._final_payment_fees_list = final_payment_fees_list
+        end = time.time()
+        print("\nSimulation time: " + str(round((end - start) / 60, 2)) + " minutes")
         return
 
     def _choose_src_and_dst(self, distribution: str, n_capacities: dict, dist_func: str):
