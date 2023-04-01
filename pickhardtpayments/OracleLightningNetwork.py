@@ -191,3 +191,44 @@ class OracleLightningNetwork(ChannelGraph):
             print(f"Node {node} not found...")
             return
         return
+
+    def _sort_channels_by_increasing_capacity(self, liquidity_dict: dict()):
+        destinations = list(liquidity_dict.keys())
+        capacity_dict = {}
+        for d in destinations:
+            capacity_dict[d] = self.get_total_actual_liquidity(d)
+        sorted_capacity_dict = dict(sorted(capacity_dict.items(), key=lambda item: item[1]))
+        # print(sorted_capacity_dict)
+        sorted_capacity_dict_list = list(sorted_capacity_dict.keys())
+        return sorted_capacity_dict_list
+
+    def _remove_if_unreachable(self, node: str):
+        if len(self._channel_graph.get_connected_nodes(node)) == 0:
+            self.delete_node(node)
+        return
+
+    def close_channels_up_to_amount(self, node: str, threshold_to_reach: float):
+        channels = self._channel_graph.get_connected_channels(node)
+        # We create a dictionary storing {(dest: liquidity_to_dest), (...,...)} then we randomly extract destinations
+        liquidity_dict = {}
+        for channel in channels:
+            liquidity = self.get_liquidity(channel.src, channel.dest)
+            liquidity_dict[channel.dest] = liquidity
+        # Depending on how we want to close the channels we sort the destinations (aka node connected) differently
+        # destinations = self._sort_channels_randomly(liquidity_dict)
+        destinations = self._sort_channels_by_increasing_capacity(liquidity_dict)
+        result = []
+        total = 0
+        for d in destinations:
+            channel_liquidity = liquidity_dict[d]
+            if total + channel_liquidity >= threshold_to_reach:
+                result.append(d)
+                break
+            result.append(d)
+            total += channel_liquidity
+        for dest in result:
+            l = self.get_liquidity(src=node, dest=dest)
+            self.close_channel(src=node, dest=dest)
+            self._remove_if_unreachable(dest)
+            print(f"Channel from {node} to {dest} with liquidity {l} closed")
+        return

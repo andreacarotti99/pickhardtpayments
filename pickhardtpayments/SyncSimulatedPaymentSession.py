@@ -206,7 +206,7 @@ class SyncSimulatedPaymentSession:
                     G.remove_edge(src, dest, key=channel.short_channel_id)
         return attempts
 
-    def _generate_candidate_paths(self, src, dest, amt, mu, base):
+    def _generate_candidate_paths(self, src, dest, amt, mu, base, verbose):
         """
         computes the optimal payment split to deliver `amt` from `src` to `dest` and updates our belief about the
         liquidity
@@ -228,8 +228,9 @@ class SyncSimulatedPaymentSession:
         status = self._min_cost_flow.Solve()
 
         if status != self._min_cost_flow.OPTIMAL:
-            print('There was an issue with the min cost flow input.')
-            print(f'Status: {status}')
+            if verbose:
+                print('There was an issue with the min cost flow input.')
+                print(f'Status: {status}')
 
             # exit(1)
             issue_min_cost_flow = True
@@ -424,13 +425,14 @@ class SyncSimulatedPaymentSession:
         # a better stop criteria would be if we compute infeasible flows or if the probabilities
         # are too low or residual amounts decrease to slowly
         while amt > 0 and cnt < 10:
-            print("Round number: ", cnt + 1)
-            print("Try to deliver", amt, "satoshi:")
+            if verbose:
+                print("Round number: ", cnt + 1)
+                print("Try to deliver", amt, "satoshi:")
 
             sub_payment = Payment(payment.sender, payment.receiver, amt)
             # transfer to a min cost flow problem and run the solver
             # paths is the lists of channels, runtime the time it took to calculate all candidates in this round
-            paths, runtime, issue_min_cost_flow = self._generate_candidate_paths(payment.sender, payment.receiver, amt, mu, base)
+            paths, runtime, issue_min_cost_flow = self._generate_candidate_paths(payment.sender, payment.receiver, amt, mu, base, verbose)
 
             if issue_min_cost_flow:
                 payment.successful = False
@@ -477,9 +479,10 @@ class SyncSimulatedPaymentSession:
                     return payment
             payment.successful = True
             payment.fee_per_node = self.get_feeEarned_per_node_successful_attempts(payment.attempts)
-            print("Payment fees per node:")
-            print(payment.fee_per_node)
-            print("Payment was successful")
+            if verbose:
+                print("Payment fees per node:")
+                print(payment.fee_per_node)
+                print("Payment was successful")
 
             payment.routing_nodes = self.get_payment_routing_nodes(payment.attempts)
 

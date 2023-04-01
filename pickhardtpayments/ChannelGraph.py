@@ -48,7 +48,6 @@ class ChannelGraph:
     def network(self, new_network):
         self._channel_graph = new_network
 
-
     def get_channel(self, src: str, dest: str, short_channel_id: str):
         """
         returns a specific channel object identified by source, destination and short_channel_id
@@ -204,6 +203,7 @@ class ChannelGraph:
 
         self.network.remove_node(node)
 
+    '''
     def get_highest_capacity_nodes(self, n=10):
         """
         n: is the number of highest capacity nodes you want to retrieve
@@ -223,6 +223,18 @@ class ChannelGraph:
             else:
                 capacities[source_node] = capacity
         # Find the top n nodes with the highest capacity
+        top_nodes = nlargest(n, capacities, key=capacities.get)
+        return top_nodes
+    '''
+
+    def get_highest_capacity_nodes(self, n: int = 10):
+        capacities = {}
+
+        for src, dest, channel in self.network.edges(data="channel"):
+            if src in capacities:
+                capacities[src] += channel.capacity / 2
+            else:
+                capacities[src] = channel.capacity / 2
         top_nodes = nlargest(n, capacities, key=capacities.get)
         return top_nodes
 
@@ -267,8 +279,8 @@ class ChannelGraph:
         rand3 = str(random.randint(1, 9))  # random 1-digit number
         return f"{rand1}x{rand2}x{rand3}"
 
-
-    def create_channel(self, source, dest, is_announced, total_capacity_of_channel, flags, is_active, last_update, base_fee, ppm,
+    def create_channel(self, source, dest, is_announced, total_capacity_of_channel, flags, is_active, last_update,
+                       base_fee, ppm,
                        cltv_delta, htlc_min_msat, htlc_max_msat, channel_id=None):
 
         """
@@ -325,18 +337,33 @@ class ChannelGraph:
     def replicate_node(self, node_to_copy: str, new_node_id: str):
         connected_channels = self.get_connected_channels(node_to_copy)
         for channel in connected_channels:
-            channel_id = self._generate_random_channel_id()
+            # channel_id = self._generate_random_channel_id()
+
             self.create_channel(
                 new_node_id,
                 channel.dest,
                 channel.is_announced,
                 channel.capacity,  # with channel.capacity we create a full copy of the copied node
                 channel.flags, channel.is_active, channel.last_update, channel.base_fee, channel.ppm,
-                channel.cltv_delta, channel.htlc_min_msat, channel.htlc_max_msat, channel_id
+                channel.cltv_delta, channel.htlc_min_msat, channel.htlc_max_msat,
+                # channel_id
+                channel.short_channel_id + "_cloned"
             )
         return
 
-    def get_connected_channels(self, node):
+    def remove_replicated_channels(self, node_copied: str, node_copier: str):
+        connected_channels_node_copied = self.get_connected_channels(node_copied)
+        connected_channels_node_copier = self.get_connected_channels(node_copier)
+
+        for cloned_channel in connected_channels_node_copier:
+            for orginal_channel in connected_channels_node_copied:
+                cloned_channel_name = cloned_channel.short_channel_id
+                original_channel_name = orginal_channel.short_channel_id
+                if (cloned_channel_name.startswith(original_channel_name)):
+                    self.close_channel(cloned_channel.src, cloned_channel.dest)
+        return
+
+    def get_connected_channels(self, node) -> [Channel]:
         """
         returns a list of the channels of the given node (ONLY ONE SIDE OF THE CHANNELS SO HALF OF THE CAPACITY)
         """
@@ -357,7 +384,11 @@ class ChannelGraph:
         return nodes_capacities
 
     def get_expected_capacity(self, node):
-        return self.get_nodes_capacities()[node]
+        try:
+            capacity = self.get_nodes_capacities()[node]
+        except KeyError:
+            print(f"Node {node} not found")
+        return capacity
 
     def delete_node(self, node):
         """
@@ -380,8 +411,6 @@ class ChannelGraph:
             self.network.remove_edge(rev_channel.src, rev_channel.dest, key=rev_channel.short_channel_id)
         self.network.remove_node(node)
 
-
-
     @property
     def snapshot_file(self):
         return self._snapshot_file
@@ -400,7 +429,70 @@ class ChannelGraph:
         subgraph = self.network.subgraph(selected_nodes)
         connected_components = list(nx.strongly_connected_components(subgraph))
         largest_cc = subgraph.subgraph(max(connected_components, key=len))
-        self.network = largest_cc
+        self.network = nx.MultiDiGraph(largest_cc)
         print(f"The network was modified and now has {largest_cc.number_of_nodes()} nodes")
         return
 
+    def close_channel(self, src: str, dest: str):
+        """
+        closes all the channels btw src and dest
+        IMPORTANT: only in the CHANNELGRAPH are closed! (not just in one of the two)
+        """
+        if self.network.has_edge(src, dest):
+            edge_keys = list(self.network[src][dest].keys())
+            for edge_key in edge_keys:
+                self.network.remove_edge(src, dest, edge_key)
+                self.network.remove_edge(dest, src, edge_key)
+        else:
+            print(f"No edges between {src} and {dest}, 0 channels were closed")
+        return
+
+    def _sort_channels_by_increasing_capacity(self, liquidity_dict: dict()):
+        destinations = list(liquidity_dict.keys())
+        capacity_dict = {}
+        for d in destinations:
+            capacity_dict[d] = self.get_expected_capacity(d)
+        sorted_capacity_dict = dict(sorted(capacity_dict.items(), key=lambda item: item[1]))
+        # print(sorted_capacity_dict)
+        sorted_capacity_dict_list = list(sorted_capacity_dict.keys())
+        return sorted_capacity_dict_list
+
+    def _remove_if_unreachable(self, node: str):
+        if len(self.get_connected_nodes(node)) == 0:
+            self.delete_node(node)
+        return
+
+    def close_channels_up_to_amount(self, node: str, threshold_to_reach: float):
+        channels = self.get_connected_channels(node)
+
+        # We create a dictionary storing {(dest: liquidity_to_dest), (...,...)} then we randomly extract destinations
+        liquidity_dict = {}
+        for channel in channels:
+            liquidity = (channel.capacity / 2)
+            liquidity_dict[channel.dest] = liquidity
+        # Depending on how we want to close the channels we sort the destinations (aka node connected) differently
+        # destinations = self._sort_channels_randomly(liquidity_dict)
+        destinations = self._sort_channels_by_increasing_capacity(liquidity_dict)
+        result = []
+        total = 0
+        for d in destinations:
+            channel_liquidity = liquidity_dict[d]
+            if total + channel_liquidity >= threshold_to_reach:
+                result.append(d)
+                break
+            result.append(d)
+            total += channel_liquidity
+        for dest in result:
+            c = self.get_channel_without_short_channel_id(node, dest)
+            self.close_channel(src=node, dest=dest)
+            self._remove_if_unreachable(dest)
+            print(f"Channel from {node} to {dest} with total capacity {c.capacity} closed")
+        return
+
+    def get_random_node_uniform_distribution(self):
+        """
+        returns a random node from the Network
+        """
+        if self.network.number_of_nodes() > 0:
+            # random.seed(int(time.time() * 1000))
+            return random.choice(list(self.network.nodes()))

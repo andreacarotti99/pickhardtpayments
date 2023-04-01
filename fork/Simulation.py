@@ -68,12 +68,16 @@ class Simulation:
 
 
 
-        print(f"Starting simulation with {payments_to_simulate} payments of {payments_amount} sat.")
+        print(f"\nStarting simulation with {payments_to_simulate} payments of {payments_amount} sat.")
         print(f"mu = {mu}")
         print(f"base = {base}")
         print(f"distribution = {distribution}")
         if dist_func != "":
             print(f"demand function f = {dist_func}")
+        if distribution == "weighted_by_capacity":
+            if dist_func == "":
+                print("You need to specify the distribution function!")
+                exit()
 
         paymentNumber = 0
         payments_fees_per_node_list = []
@@ -82,10 +86,12 @@ class Simulation:
         self._payment_session.forget_information()
         n_capacities = self._channel_graph.get_nodes_capacities()
         while paymentNumber < payments_to_simulate:
-            print("*" * 90)
-            print(f"Payment: {paymentNumber + 1}")
+            if verbose:
+                print("*" * 90)
+                print(f"Payment: {paymentNumber + 1}")
             src, dst = self._choose_src_and_dst(distribution, n_capacities, dist_func)
-            print(f"Source: {src}\nDestination: {dst}")
+            if verbose:
+                print(f"Source: {src}\nDestination: {dst}")
             # perform the payment
             payment = self._payment_session.pickhardt_pay(src, dst, payments_amount, mu, base, verbose)
             if payment.successful:
@@ -112,8 +118,10 @@ class Simulation:
         """
 
         if distribution == "uniform":
-            src = self._uncertainty_network.get_random_node_uniform_distribution()
-            dst = self._uncertainty_network.get_random_node_uniform_distribution()
+            src = self.channel_graph.get_random_node_uniform_distribution()
+            dst = self.channel_graph.get_random_node_uniform_distribution()
+            # src = self._uncertainty_network.get_random_node_uniform_distribution()
+            # dst = self._uncertainty_network.get_random_node_uniform_distribution()
             while dst == src:
                 dst = self._uncertainty_network.get_random_node_uniform_distribution()
         elif distribution == "weighted_by_capacity":
@@ -167,7 +175,7 @@ class Simulation:
         if found:
             return total
         else:
-            print(f"The node {node} and any of its splits routed any payment...")
+            print(f"The node {node} and any of its splits didn't route any payment...")
             return 0
 
     def get_ratio(self, node):

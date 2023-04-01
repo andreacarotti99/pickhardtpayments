@@ -42,7 +42,7 @@ def compute_C(graph: OracleLightningNetwork, dist_func: str):
     C = sum(np.array([f(val, dist_func) for val in nodes_actual_capacities.values()]))
     return C
 
-def get_random_node_weighted_by_capacity(d, dist_func):
+def get_random_node_weighted_by_capacity(d, dist_func_name):
     """
     Randomly chooses a key from a dictionary proportional to its value.
     Args: d (dict): A dictionary with numeric values.
@@ -51,7 +51,7 @@ def get_random_node_weighted_by_capacity(d, dist_func):
     # Get the keys and values from the dictionary
     keys = list(d.keys())
 
-    values = np.array([f(val, dist_func) for val in d.values()])
+    values = np.array([f(val, dist_func_name) for val in d.values()])
     # values = np.array(list(f(d.values())))
     # print(values)
     # Normalize the values to create a probability distribution

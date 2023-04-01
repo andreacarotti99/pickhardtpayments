@@ -117,10 +117,4 @@ class UncertaintyNetwork(ChannelGraph):
         print("channels with full knowledge: ", len(ego_network))
         print("channels with 2 Bits of less entropy: ", len(foaf_network))
 
-    def get_random_node_uniform_distribution(self):
-        """
-        returns a random node from the Network
-        """
-        if self.network.number_of_nodes() > 0:
-            # random.seed(int(time.time() * 1000))
-            return random.choice(list(self.network.nodes()))
+
