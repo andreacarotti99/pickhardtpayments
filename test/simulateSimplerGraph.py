@@ -3,7 +3,7 @@ from pickhardtpayments.pickhardtpayments import ChannelGraph
 
 base = 20_000
 channel_graph = ChannelGraph("../fork/SNAPSHOTS/cosimo_19jan2023_converted.json")
-channel_graph.transform_channel_graph_to_simpler(tentative_nodes_to_keep=1000)
+channel_graph.transform_channel_graph_to_simpler(tentative_nodes_to_keep=1000, strategy="weighted_by_capacity")
 
 simulation = Simulation(channel_graph=channel_graph, base=base)
 simulation.run_success_payments_simulation(
@@ -15,3 +15,6 @@ simulation.run_success_payments_simulation(
             dist_func="linear",
             verbose=True
         )
+
+print(simulation.payments_fees_per_transaction)
+

@@ -227,7 +227,7 @@ class ChannelGraph:
         return top_nodes
     '''
 
-    def get_highest_capacity_nodes(self, n: int = 10):
+    def get_highest_capacity_nodes(self, n: int = 10) -> [str]:
         capacities = {}
 
         for src, dest, channel in self.network.edges(data="channel"):
@@ -415,7 +415,16 @@ class ChannelGraph:
     def snapshot_file(self):
         return self._snapshot_file
 
-    def transform_channel_graph_to_simpler(self, tentative_nodes_to_keep: int):
+    def transform_channel_graph_to_simpler(self, tentative_nodes_to_keep: int, strategy: str = "random"):
+        """
+        Takes as parameter the number of nodes we would like to have if it was just one strongly connected component,
+        simplify the channelGraph by doing the following:
+        1) takes the bigger strongly connected component in the network
+        2) chooses according to the strategy tentative_nodes_to_keep nodes from the simplified network without replacement
+        3) takes the subgraph obtained by those randomly selected nodes
+        4) if in the subgraph obtained there is more than one strongly connected component keeps the largest one
+        """
+
         # This is to get the bigger connected component in the network
         scc = list(nx.strongly_connected_components(self.network))
         max_scc = max(scc, key=len)
@@ -425,7 +434,11 @@ class ChannelGraph:
 
         # This is to actually simplify the network
         nodes = list(self.network.nodes())
-        selected_nodes = np.random.choice(nodes, size=tentative_nodes_to_keep, replace=False)
+        if strategy == "weighted_by_capacity":
+            # obtain a list of tentative_nodes_to_keep highest capacity nodes
+            selected_nodes = self.get_highest_capacity_nodes(n=tentative_nodes_to_keep)
+        elif strategy == "random":
+            selected_nodes = np.random.choice(nodes, size=tentative_nodes_to_keep, replace=False)
         subgraph = self.network.subgraph(selected_nodes)
         connected_components = list(nx.strongly_connected_components(subgraph))
         largest_cc = subgraph.subgraph(max(connected_components, key=len))
@@ -463,6 +476,9 @@ class ChannelGraph:
         return
 
     def close_channels_up_to_amount(self, node: str, threshold_to_reach: float):
+        if threshold_to_reach > self.get_expected_capacity(node):
+            print("Unable to close enough channels to get the threshold liquidity")
+            exit()
         channels = self.get_connected_channels(node)
 
         # We create a dictionary storing {(dest: liquidity_to_dest), (...,...)} then we randomly extract destinations

@@ -2,6 +2,8 @@ import os
 import time
 
 import pandas as pd
+from tqdm import tqdm
+
 from pickhardtpayments.fork.ComputeDemand import get_random_node_weighted_by_capacity
 from pickhardtpayments.pickhardtpayments import SyncSimulatedPaymentSession, UncertaintyNetwork, OracleLightningNetwork, \
     ChannelGraph
@@ -27,7 +29,8 @@ class Simulation:
         else:
             self._oracle_lightning_network = oracle_lightning_network
 
-        self._payment_session = SyncSimulatedPaymentSession(self._oracle_lightning_network, self._uncertainty_network, prune_network=False)
+        self._payment_session = SyncSimulatedPaymentSession(self._oracle_lightning_network, self._uncertainty_network,
+                                                            prune_network=False)
 
         # At each new run these parameters get updated
         self._payments_to_simulate = None,
@@ -66,8 +69,6 @@ class Simulation:
         self._distribution = distribution
         self._dist_func = dist_func
 
-
-
         print(f"\nStarting simulation with {payments_to_simulate} payments of {payments_amount} sat.")
         print(f"mu = {mu}")
         print(f"base = {base}")
@@ -85,6 +86,9 @@ class Simulation:
         final_payment_fees_list = []
         self._payment_session.forget_information()
         n_capacities = self._channel_graph.get_nodes_capacities()
+        if not verbose:
+            pbar = tqdm(total=payments_to_simulate)
+
         while paymentNumber < payments_to_simulate:
             if verbose:
                 print("*" * 90)
@@ -104,6 +108,8 @@ class Simulation:
                 final_payment_fees_list.append(payment.final_payment_fees)
                 # print("fees:", payment.settlement_fees)
                 # print("correct fees", payment.final_payment_fees)
+                if not verbose:
+                    pbar.update(1)
 
         self.payments_fees_per_transaction = payments_fees_per_node_list
         self.payments_routing_nodes_per_transaction = payments_routing_nodes
@@ -243,18 +249,23 @@ class Simulation:
     @property
     def payments_to_simulate(self):
         return self._payments_to_simulate
+
     @property
     def payments_amount(self):
-        return  self._payments_amount
+        return self._payments_amount
+
     @property
     def mu(self):
         return self._mu
+
     @property
     def base(self):
         return self._base
+
     @property
     def distribution(self):
         return self._distribution
+
     @property
     def dist_func(self):
         return self._dist_func
@@ -272,7 +283,7 @@ class Simulation:
         returns a dictionary of the nodes with the number of routed transactions for each node
         """
         return self._routed_transactions_per_node
-    
+
     @property
     def final_payment_fees_list(self):
         return self._final_payment_fees_list
@@ -280,6 +291,3 @@ class Simulation:
     @final_payment_fees_list.setter
     def final_payment_fees_list(self, fees_list):
         self._final_payment_fees_list = fees_list
-
-
-

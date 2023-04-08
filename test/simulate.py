@@ -15,7 +15,6 @@ print()
 oracle.print_node_info(node=NODE_TO_COPY)
 print()
 
-
 channel_graph.replicate_node(node_to_copy=NODE_TO_COPY, new_node_id=NODE_WITH_NEW_CHANNELS)
 oracle = OracleLightningNetwork(channel_graph)
 

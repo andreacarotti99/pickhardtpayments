@@ -2,12 +2,13 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import os
 from pickhardtpayments.fork.ComputeDemand import compute_C
+from pickhardtpayments.fork.replicatingstrategy.SortingMetrics import compute_avg_chan_cap_for_each_node
 from pickhardtpayments.pickhardtpayments import ChannelGraph, OracleLightningNetwork
 
 # INTERESTING: andamento \_/
 # RESULTS_FILE = "results_1000trans_1000SAT_0mu_pickhardt_12apr2022_fixed_const_fees_dist_weig.csv"
 
-RESULTS_FILE = "results_1000trans_1000SAT_0mu_cosimo_19jan2023_converted_dist_uniform.csv"
+RESULTS_FILE = "results_10000trans_1000SAT_0mu_pickhardt_12apr2022_fixed_dist_uniform.csv"
 
 def print_info_results(df):
     print("Avg capacity of each node: " + str(df['capacity'].mean()))
@@ -24,7 +25,7 @@ def apply_filters(df):
     # df = df.loc[df['total_fee'] >= 100]
     # df = df.loc[df['node'] != "0294e9ad2727d623fb22870e32f167d4d014e2f7adccb0926802f0bd4d17959093"]
     # df = df.loc[df['routed_payments'] != 28]
-    # df = df.loc[df['routed_payments'] >= 3]
+    df = df.loc[df['routed_payments'] >= 3]
     # df.loc[df['ratio'] > 0.0004, 'ratio'] = 0.0004
     # df = df.loc[df['ratio'] <= 0.001]
     # df = df.loc[df['capacity'] >= 25_000_000]
@@ -57,7 +58,7 @@ def read_file():
 
 def main():
     snapshot_file = "pickhardt_12apr2022_fixed.json"
-    channel_graph = ChannelGraph("../SNAPSHOTS/" + snapshot_file)
+    channel_graph = ChannelGraph("../../SNAPSHOTS/" + snapshot_file)
     oracle_lightning_network = OracleLightningNetwork(channel_graph)
     C = compute_C(oracle_lightning_network, "quadratic")
 
@@ -89,7 +90,13 @@ def main():
     df = df.assign(ratio_prof=df['fees_prof']/df['capacity'])
 
 
-    df = df.sort_values(by='capacity', ascending=False)
+    df = df.sort_values(by='ratio', ascending=False)
+
+    # adding the avg_channel_cap for each node in the dataframe
+    node_avg_cap_dict = compute_avg_chan_cap_for_each_node(channel_graph=channel_graph)
+    df['avg_channel_cap'] = df['node'].map(node_avg_cap_dict)
+
+    # df = df.sort_values(by='avg_channel_cap', ascending=False)
 
     df = df.head(600)
 
@@ -100,7 +107,7 @@ def main():
     df = apply_filters(df)
 
     # ax = df.plot(x='node', y='ratio',kind='line')
-    ax = df.plot(x='node', y='ratio', kind='bar')
+    ax = df.plot(x='node', y='capacity', kind='bar')
     plt.title("Ratio for each node")
     plt.suptitle("CAP of each node decreases (--->) - DESC")
     plt.xlabel('node')

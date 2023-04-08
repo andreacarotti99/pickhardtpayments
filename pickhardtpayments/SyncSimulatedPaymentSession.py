@@ -95,7 +95,7 @@ class SyncSimulatedPaymentSession:
             # However the pruning would be much better to work on quantiles of normalized cost
             # So as soon as we have better Scaling, Centralization and feature engineering we can
             # probably have a more focused pruning
-            if self._prune_network and channel.success_probability(250_000) < 0.9:
+            if self._prune_network and channel.success_probability() < 0.9:
                 continue
             cnt = 0
             # QUANTIZATION):

@@ -1,21 +1,14 @@
 import pandas as pd
-
 from pickhardtpayments.fork.Simulation import Simulation
+from pickhardtpayments.fork.replicatingstrategy.SortingMetrics import sort_dict_by_value_descending
 from pickhardtpayments.pickhardtpayments import ChannelGraph
 import copy
 
 
-'''
-simulate...
-copy best node
-    performance increased -> copy second node
-    
-    performance decreased -> if decrease_count == 4 stop
-'''
 
 base = 20_000
 channel_graph = ChannelGraph("../SNAPSHOTS/cosimo_19jan2023_converted.json")
-channel_graph.transform_channel_graph_to_simpler(tentative_nodes_to_keep=2000)
+channel_graph.transform_channel_graph_to_simpler(tentative_nodes_to_keep=2000, strategy="random")
 
 agent = channel_graph.get_highest_capacity_nodes(1)[0]
 
@@ -43,6 +36,14 @@ filtered_rtpn = {k: v for k, v in rtpn.items() if v > 10}
 hrn = [x for x in hrn if x in filtered_rtpn]
 
 
+nodes_to_copy = hrn
+# nodes_importance_dict = compute_importance_for_each_node(channel_graph, 1000)
+# sorted_important_nodes = sort_dict_by_value_descending(nodes_importance_dict)
+# nodes_to_copy = sorted_important_nodes
+
+# nodes_to_copy = sort_dict_by_value_descending(compute_betweenness_for_each_node(channel_graph))
+
+
 print(f"Agent:{agent}")
 print("\n Starting the iterated game...")
 
@@ -51,11 +52,12 @@ df['ranking'] = ''
 df['copied_node'] = ''
 df['new_fees'] = ''
 df['delta'] = ''
+df['perc_delta'] = ''
 
 for i in range(10):
     cg = copy.deepcopy(channel_graph)
-    cg.close_channels_up_to_amount(node=agent, threshold_to_reach=cg.get_expected_capacity(node=hrn[i]))
-    cg.replicate_node(node_to_copy=hrn[i], new_node_id=agent)
+    cg.close_channels_up_to_amount(node=agent, threshold_to_reach=cg.get_expected_capacity(node=nodes_to_copy[i]))
+    cg.replicate_node(node_to_copy=nodes_to_copy[i], new_node_id=agent)
     s = Simulation(channel_graph=cg, base=base)
     s.run_success_payments_simulation(
             payments_to_simulate=1000,
@@ -70,13 +72,16 @@ for i in range(10):
     # new_total_fee_agent = s.get_fees(node=agent) + s.get_fees(node="THIEF_" + str(i))
     new_total_fee_agent = s.get_fees(node=agent)
     delta = new_total_fee_agent - prev_total_fee
-    print(f"Copying hrn number: {i}")
+    print(f"Copying nodes_to_copy number: {i}")
     # print(f"New fees agent + copy = {s.get_fees(node=agent)} + {s.get_fees(node='THIEF_' + str(i))} = {new_total_fee_agent}")
     print(f"New fees agent + copy = {new_total_fee_agent}")
     print(f"Delta with first simulation = {delta}")
 
-    new_row = {'ranking': i, 'copied_node': hrn[i], 'new_fees': new_total_fee_agent, 'delta': delta}
+    new_row = {'ranking': i, 'copied_node': nodes_to_copy[i], 'new_fees': new_total_fee_agent, 'delta': delta, 'perc_delta': (delta*100)/prev_total_fee}
     df = df.append(new_row, ignore_index=True)
 
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.expand_frame_repr', False)
 print(df)
 
