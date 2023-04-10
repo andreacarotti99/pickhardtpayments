@@ -1,5 +1,6 @@
 import os
 import time
+import random
 
 import pandas as pd
 from tqdm import tqdm
@@ -55,7 +56,8 @@ class Simulation:
                                         base: int = 1000,
                                         distribution: str = "uniform",
                                         dist_func: str = "",
-                                        verbose=False):
+                                        verbose=False,
+                                        payments_amount_distribution: str = "fixed"):
         """
         Run a simulation of Pickhardt payments, every time there is an unsuccessful payment it retries.
         """
@@ -68,6 +70,7 @@ class Simulation:
         self._base = base
         self._distribution = distribution
         self._dist_func = dist_func
+        self._payments_amount_distribution = payments_amount_distribution
 
         print(f"\nStarting simulation with {payments_to_simulate} payments of {payments_amount} sat.")
         print(f"mu = {mu}")
@@ -97,6 +100,11 @@ class Simulation:
             if verbose:
                 print(f"Source: {src}\nDestination: {dst}")
             # perform the payment
+
+            if payments_amount_distribution == "random":
+                payments_amount = random.randint(10000, 1000000)
+
+
             payment = self._payment_session.pickhardt_pay(src, dst, payments_amount, mu, base, verbose)
             if payment.successful:
                 paymentNumber += 1

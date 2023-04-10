@@ -1,6 +1,6 @@
 import pandas as pd
 from pickhardtpayments.fork.Simulation import Simulation
-from pickhardtpayments.fork.replicatingstrategy.SortingMetrics import sort_dict_by_value_descending
+from pickhardtpayments.fork.replicatingstrategy.SortingMetrics import *
 from pickhardtpayments.pickhardtpayments import ChannelGraph
 import copy
 
@@ -8,14 +8,14 @@ import copy
 
 base = 20_000
 channel_graph = ChannelGraph("../SNAPSHOTS/cosimo_19jan2023_converted.json")
-channel_graph.transform_channel_graph_to_simpler(tentative_nodes_to_keep=2000, strategy="random")
+channel_graph.transform_channel_graph_to_simpler(tentative_nodes_to_keep=100, strategy="weighted_by_capacity")
 
 agent = channel_graph.get_highest_capacity_nodes(1)[0]
 
 simulation = Simulation(channel_graph=channel_graph, base=base)
 simulation.run_success_payments_simulation(
             payments_to_simulate=1000,
-            payments_amount=1000,
+            payments_amount=10_000,
             mu=1000,
             base=1000,
             distribution="weighted_by_capacity",
@@ -36,12 +36,15 @@ filtered_rtpn = {k: v for k, v in rtpn.items() if v > 10}
 hrn = [x for x in hrn if x in filtered_rtpn]
 
 
-nodes_to_copy = hrn
+# nodes_to_copy = hrn
+
 # nodes_importance_dict = compute_importance_for_each_node(channel_graph, 1000)
 # sorted_important_nodes = sort_dict_by_value_descending(nodes_importance_dict)
 # nodes_to_copy = sorted_important_nodes
 
-# nodes_to_copy = sort_dict_by_value_descending(compute_betweenness_for_each_node(channel_graph))
+assign_fee_and_cap_weight(channel_graph=channel_graph, amount=10_000)
+betwenness_weighted_cap_and_fee_dict = betwenness_weighted_cap_and_fee_dict(channel_graph, fee_weight=1, cap_weight=0)
+nodes_to_copy = sort_dict_by_value_descending(betwenness_weighted_cap_and_fee_dict)
 
 
 print(f"Agent:{agent}")
@@ -55,13 +58,14 @@ df['delta'] = ''
 df['perc_delta'] = ''
 
 for i in range(10):
+    print(f"Replicating node {i} in ranking")
     cg = copy.deepcopy(channel_graph)
     cg.close_channels_up_to_amount(node=agent, threshold_to_reach=cg.get_expected_capacity(node=nodes_to_copy[i]))
     cg.replicate_node(node_to_copy=nodes_to_copy[i], new_node_id=agent)
     s = Simulation(channel_graph=cg, base=base)
     s.run_success_payments_simulation(
             payments_to_simulate=1000,
-            payments_amount=1000,
+            payments_amount=10_000,
             mu=1000,
             base=1000,
             distribution="weighted_by_capacity",
@@ -85,3 +89,5 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.expand_frame_repr', False)
 print(df)
 
+filename = "weighted_by_capacity_metric_betwenness_fee_0_cap_1"
+df.to_csv("../RESULTS/iterated_game/" + filename, index=False)
