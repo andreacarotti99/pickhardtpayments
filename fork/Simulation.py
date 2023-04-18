@@ -52,7 +52,7 @@ class Simulation:
     def run_success_payments_simulation(self,
                                         payments_to_simulate: int = 1000,
                                         payments_amount: int = 1000,
-                                        mu: int = 10,
+                                        mu: float = 10,
                                         base: int = 1000,
                                         distribution: str = "uniform",
                                         dist_func: str = "",
@@ -104,8 +104,10 @@ class Simulation:
             if payments_amount_distribution == "random":
                 payments_amount = random.randint(10000, 1000000)
 
-
-            payment = self._payment_session.pickhardt_pay(src, dst, payments_amount, mu, base, verbose)
+            try:
+                payment = self._payment_session.pickhardt_pay(src, dst, payments_amount, mu, base, verbose)
+            except KeyError:
+                continue
             if payment.successful:
                 paymentNumber += 1
                 payments_fees_per_node_list.append(payment.fee_per_node)

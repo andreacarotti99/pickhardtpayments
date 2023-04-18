@@ -48,7 +48,7 @@ class ChannelGraph:
     def network(self, new_network):
         self._channel_graph = new_network
 
-    def get_channel(self, src: str, dest: str, short_channel_id: str):
+    def get_channel(self, src: str, dest: str, short_channel_id: str) -> Channel:
         """
         returns a specific channel object identified by source, destination and short_channel_id
         from the ChannelGraph
@@ -339,12 +339,18 @@ class ChannelGraph:
         for channel in connected_channels:
             # channel_id = self._generate_random_channel_id()
 
+            # check if a channel btw new_node_id and node_to_copy already exist:
+            if self.network.has_edge(new_node_id, channel.dest):
+                print(f"Already present edge btw {new_node_id} and {channel.dest}")
+
             self.create_channel(
                 new_node_id,
                 channel.dest,
                 channel.is_announced,
-                channel.capacity,  # with channel.capacity we create a full copy of the copied node
-                channel.flags, channel.is_active, channel.last_update, channel.base_fee, channel.ppm,
+                channel.capacity + 1,  # with channel.capacity we create a full copy of the copied node
+                channel.flags, channel.is_active, channel.last_update,
+                channel.base_fee - 1,  # -1 is to make it more competitive for fees
+                channel.ppm - 1,  # -1 is to make it more competitive for fees
                 channel.cltv_delta, channel.htlc_min_msat, channel.htlc_max_msat,
                 # channel_id
                 channel.short_channel_id + "_cloned"
@@ -396,7 +402,7 @@ class ChannelGraph:
         """
         try:
             node_is_present = self.network[node]
-            print(f"Removing node: {node} from ChannelGraph...")
+            print(f"Removing node: {node[0:2]}..{node[-2:]} from ChannelGraph...")
         except Exception as e:
             print(f"Node {node} not found...")
             return
@@ -501,8 +507,9 @@ class ChannelGraph:
         for dest in result:
             c = self.get_channel_without_short_channel_id(node, dest)
             self.close_channel(src=node, dest=dest)
+            print(f"Channel {node[0:2]}..{node[-2:]} <--> {dest[0:2]}..{dest[-2:]} with total cap. {c.capacity} closed")
             self._remove_if_unreachable(dest)
-            print(f"Channel from {node} to {dest} with total capacity {c.capacity} closed")
+        print(f"Total channels closed: {len(result)}")
         return
 
     def get_random_node_uniform_distribution(self):
@@ -512,3 +519,16 @@ class ChannelGraph:
         if self.network.number_of_nodes() > 0:
             # random.seed(int(time.time() * 1000))
             return random.choice(list(self.network.nodes()))
+
+    def getDiGraph(self):
+        G_DiGraph = nx.DiGraph()
+        for u, v, keys, channel in self.network.edges(data="channel", keys=True):
+            # the only difference is that if there are many edges between two nodes we only keep the last one
+            # G_DiGraph.add_edge(channel.src, channel.dest, key=channel.short_channel_id, channel=channel)
+            G_DiGraph.add_edge(u, v,
+                            ppm=channel.ppm,
+                            base=channel.base_fee)
+        return G_DiGraph
+
+
+

@@ -1,9 +1,11 @@
 import os, json
 import statistics
+
+import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-def median_satoshis_channel(data):
+def median_satoshis_channel_cap(data):
     channels = data['channels']
     fees = [c['satoshis'] for c in channels]
     median_fee = statistics.median(fees)
@@ -11,29 +13,29 @@ def median_satoshis_channel(data):
 
 def median_fee_per_millionth(data):
     channels = data['channels']
-    fees = [c['fee_per_millionth'] for c in channels]
+    fees = [c['fee_per_millionth'] for c in channels if c['fee_per_millionth'] < 20_000]
     median_fee = statistics.median(fees)
     return median_fee
 
 
 def median_base_fee(data):
     channels = data['channels']
-    base_fees = [c['base_fee_millisatoshi'] for c in channels]
+    base_fees = [c['base_fee_millisatoshi'] for c in channels if c['base_fee_millisatoshi'] < 20_000]
     median_base_fee = statistics.median(base_fees)
     return median_base_fee
 
 
 def avg_base_fee(data):
     channels = data['channels']
-    total_base_fee = sum(c['base_fee_millisatoshi'] for c in channels)
-    average_base_fee = total_base_fee / len(channels)
+    base_fees = [c['base_fee_millisatoshi'] for c in channels if c['base_fee_millisatoshi'] < 20_000]
+    average_base_fee = statistics.mean(base_fees)
     return average_base_fee
 
 
 def avg_fee_per_millionth(data):
     channels = data['channels']
-    total_base_fee = sum(c['fee_per_millionth'] for c in channels)
-    average_fee = total_base_fee / len(channels)
+    total_base_fee = [c['fee_per_millionth'] for c in channels if c['fee_per_millionth'] < 20_000]
+    average_fee = statistics.mean(total_base_fee)
     return average_fee
 
 
@@ -108,10 +110,38 @@ def plot_base_fee_distribution(data):
 
     return
 
+def plot_capacity_distribution(data):
+    satoshis = pd.Series([channel["satoshis"] for channel in data["channels"]])
+
+    bin_size = 100_000
+
+    bins = pd.interval_range(start=0, end=15_000_000, freq=bin_size)
+
+    satoshis_binned = pd.cut(satoshis, bins=bins)
+    satoshis_count = satoshis_binned.value_counts().sort_index()
+
+    bin_lefts = [interval.left for interval in satoshis_count.index]
+
+
+    plt.figure(figsize=(14, 7))
+    plt.bar(bin_lefts, satoshis_count, width=bin_size, align='edge')
+
+    plt.xlabel('Channel Capacity (satoshis)', fontsize=12)
+    plt.ylabel('Count')
+    plt.title('Capacity Distribution')
+    plt.yscale("log")
+    tick_interval = 1
+    plt.xticks(bin_lefts[::tick_interval], rotation=90, fontsize=5)
+    plt.show()
+
+
+
+
+
 
 def main():
     current_file_directory = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_file_directory, "SNAPSHOTS/" + "cosimo_19jan2023_converted.json")
+    file_path = os.path.join(current_file_directory, "../SNAPSHOTS/" + "cosimo_19jan2023_converted.json")
     with open(file_path, 'r') as file:
         file_contents = file.read()
         data = json.loads(file_contents)
@@ -120,7 +150,9 @@ def main():
         print("Median base fee:", median_base_fee(data))
         print("Avg fee per millionth:", avg_fee_per_millionth(data))
         print("Median fee per millionth:", median_fee_per_millionth(data))
-        print(f"Median satoshis per channel: {median_satoshis_channel(data)}")
+        print(f"Median satoshis per channel: {median_satoshis_channel_cap(data)}")
+
+        plot_capacity_distribution(data)
 
         '''
         print_channel_info('033ac2f9f7ff643c235cc247c521663924aff73b26b38118a6c6821460afcde1b3',

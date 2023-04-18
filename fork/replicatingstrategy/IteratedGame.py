@@ -5,22 +5,30 @@ from pickhardtpayments.pickhardtpayments import ChannelGraph
 import copy
 
 
-
+# SIMULATION PARAMETERS:
+payments_to_simulate = 1000
+payments_amount = 500_000
+mu = 0
 base = 20_000
-channel_graph = ChannelGraph("../SNAPSHOTS/cosimo_19jan2023_converted.json")
-channel_graph.transform_channel_graph_to_simpler(tentative_nodes_to_keep=100, strategy="weighted_by_capacity")
+distribution = "uniform"
+dist_func = ""
+verbose = False
 
+# -------------------------------------------------------------------------------------
+
+channel_graph = ChannelGraph("../SNAPSHOTS/cosimo_19jan2023_converted.json")
+channel_graph.transform_channel_graph_to_simpler(tentative_nodes_to_keep=1000, strategy="random")
 agent = channel_graph.get_highest_capacity_nodes(1)[0]
 
 simulation = Simulation(channel_graph=channel_graph, base=base)
 simulation.run_success_payments_simulation(
-            payments_to_simulate=1000,
-            payments_amount=10_000,
-            mu=1000,
-            base=1000,
-            distribution="weighted_by_capacity",
-            dist_func="linear",
-            verbose=False
+            payments_to_simulate=payments_to_simulate,
+            payments_amount=payments_amount,
+            mu=mu,
+            base=base,
+            distribution=distribution,
+            dist_func=dist_func,
+            verbose=verbose
         )
 hrn = simulation.highest_ratio_nodes
 prev_total_fee = simulation.get_fees(node=agent)
@@ -42,8 +50,8 @@ hrn = [x for x in hrn if x in filtered_rtpn]
 # sorted_important_nodes = sort_dict_by_value_descending(nodes_importance_dict)
 # nodes_to_copy = sorted_important_nodes
 
-assign_fee_and_cap_weight(channel_graph=channel_graph, amount=10_000)
-betwenness_weighted_cap_and_fee_dict = betwenness_weighted_cap_and_fee_dict(channel_graph, fee_weight=1, cap_weight=0)
+assign_fee_and_cap_weight(channel_graph=channel_graph, amount=payments_amount)
+betwenness_weighted_cap_and_fee_dict = betwenness_weighted_cap_and_fee_dict(channel_graph, fee_weight=0, cap_weight=1)
 nodes_to_copy = sort_dict_by_value_descending(betwenness_weighted_cap_and_fee_dict)
 
 
@@ -62,15 +70,18 @@ for i in range(10):
     cg = copy.deepcopy(channel_graph)
     cg.close_channels_up_to_amount(node=agent, threshold_to_reach=cg.get_expected_capacity(node=nodes_to_copy[i]))
     cg.replicate_node(node_to_copy=nodes_to_copy[i], new_node_id=agent)
+    #TODO: I need to make sure that if I replicate a node, the edges I am replicating are not edges that my node agent already
+    # has, otherwise I am creating two channels towards the same edge
+
     s = Simulation(channel_graph=cg, base=base)
     s.run_success_payments_simulation(
-            payments_to_simulate=1000,
-            payments_amount=10_000,
-            mu=1000,
-            base=1000,
-            distribution="weighted_by_capacity",
-            dist_func="linear",
-            verbose=False
+            payments_to_simulate=payments_to_simulate,
+            payments_amount=payments_amount,
+            mu=mu,
+            base=base,
+            distribution=distribution,
+            dist_func=dist_func,
+            verbose=verbose
         )
 
     # new_total_fee_agent = s.get_fees(node=agent) + s.get_fees(node="THIEF_" + str(i))
@@ -89,5 +100,5 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.expand_frame_repr', False)
 print(df)
 
-filename = "weighted_by_capacity_metric_betwenness_fee_0_cap_1"
+filename = "uniform_random_metric_betwenness_fee_0_cap_1_mu0_amount500000.csv"
 df.to_csv("../RESULTS/iterated_game/" + filename, index=False)
