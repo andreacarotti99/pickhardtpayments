@@ -102,7 +102,7 @@ class Simulation:
             # perform the payment
 
             if payments_amount_distribution == "random":
-                payments_amount = random.randint(10000, 1000000)
+                payments_amount = random.randint(10_000, 1_000_000)
 
             try:
                 payment = self._payment_session.pickhardt_pay(src, dst, payments_amount, mu, base, verbose)

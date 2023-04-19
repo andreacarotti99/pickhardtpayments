@@ -26,15 +26,16 @@ class ExportResults(Simulation):
         s = self._simulation
 
         if s.dist_func == "":
-            output_file = f"results_{str(s.payments_to_simulate)}trans_{s.payments_amount}SAT_{s.mu}mu_{s.channel_graph.snapshot_file[10:-5]}" \
-                      f"_dist_{s.distribution[0:4]}_{simulation_number}"
+            output_file = f"results_{str(s.payments_to_simulate)}trans_{s.payments_amount}SAT_{s.mu}mu" \
+                      f"_dist{s.distribution[0:4]}_amountdist{s._payments_amount_distribution[0:4]}_{simulation_number}"
         else:
-            output_file = f"results_{str(s.payments_to_simulate)}trans_{s.payments_amount}SAT_{s.mu}mu_{s.channel_graph.snapshot_file[10:-5]}" \
-                      f"_dist_{s.distribution[0:4]}_{s.dist_func}_{simulation_number}"
+            output_file = f"results_{str(s.payments_to_simulate)}trans_{s.payments_amount}SAT_{s.mu}mu_" \
+                      f"_dist{s.distribution[0:4]}_{s.dist_func}_amountsdist{s._payments_amount_distribution[0:4]}_{simulation_number}"
 
         self._results_df.to_csv("%s/%s.csv" % (output_dir, output_file), index=False)
 
         print(f"Results successfully exported to csv in file: {output_file}")
+        print(f"Directory: {output_dir}")
         return
 
     def substitute_node_name(self, old_name, new_name):
