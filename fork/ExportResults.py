@@ -20,9 +20,8 @@ class ExportResults(Simulation):
         is used to distinguish between different simulation in the same run
         """
 
-        output_dir = 'RESULTS'
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+
+
         s = self._simulation
 
         if s.dist_func == "":
@@ -32,10 +31,9 @@ class ExportResults(Simulation):
             output_file = f"results_{str(s.payments_to_simulate)}trans_{s.payments_amount}SAT_{s.mu}mu_" \
                       f"_dist{s.distribution[0:4]}_{s.dist_func}_amountsdist{s._payments_amount_distribution[0:4]}_{simulation_number}"
 
-        self._results_df.to_csv("%s/%s.csv" % (output_dir, output_file), index=False)
+        self._results_df.to_csv("%s.csv" % output_file, index=False)
 
         print(f"Results successfully exported to csv in file: {output_file}")
-        print(f"Directory: {output_dir}")
         return
 
     def substitute_node_name(self, old_name, new_name):

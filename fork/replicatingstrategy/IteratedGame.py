@@ -4,6 +4,17 @@ from pickhardtpayments.fork.replicatingstrategy.SortingMetrics import *
 from pickhardtpayments.pickhardtpayments import ChannelGraph
 import copy
 
+"""
+In the iterated game what we try to do is the following:
+1)  We first run a simulation (this step can be skipped if you already have data from a previous simulation)
+2)  We create a list of nodes_to_copy, this list should contain nodes according to some criteria 
+    (e.g. nodes betwenness centrality, or highest ratio nodes)
+3)  We define a node to observe "agent"
+4)  Finally we observe the fees earned by the node agent after copying the first 10 nodes of the list nodes_to_copy 
+    (and we write down the difference in percentage compared to the initial simulation)
+5)  We save the result in a csv file
+"""
+
 
 # SIMULATION PARAMETERS:
 payments_to_simulate = 1000
@@ -17,7 +28,7 @@ verbose = False
 # -------------------------------------------------------------------------------------
 
 channel_graph = ChannelGraph("../SNAPSHOTS/cosimo_19jan2023_converted.json")
-channel_graph.transform_channel_graph_to_simpler(tentative_nodes_to_keep=1000, strategy="random")
+channel_graph.transform_channel_graph_to_simpler(tentative_nodes_to_keep=1000, strategy="weighted_by_capacity")
 agent = channel_graph.get_highest_capacity_nodes(1)[0]
 
 simulation = Simulation(channel_graph=channel_graph, base=base)
@@ -100,5 +111,5 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.expand_frame_repr', False)
 print(df)
 
-filename = "uniform_random_metric_betwenness_fee_0_cap_1_mu0_amount500000.csv"
+filename = "graphhcn_uniform_random_metric_betwenness_fee_0_cap_1_mu0_amount500000.csv"
 df.to_csv("../RESULTS/iterated_game/" + filename, index=False)

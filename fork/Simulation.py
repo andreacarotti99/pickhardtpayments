@@ -57,7 +57,8 @@ class Simulation:
                                         distribution: str = "uniform",
                                         dist_func: str = "",
                                         verbose=False,
-                                        payments_amount_distribution: str = "fixed"):
+                                        payments_amount_distribution: str = "fixed",
+                                        ):
         """
         Run a simulation of Pickhardt payments, every time there is an unsuccessful payment it retries.
         """
@@ -181,6 +182,7 @@ class Simulation:
     def get_fees(self, node):
         """
         returns the fees earned by node, if the node was split returns the sum of the fees earned by its splits
+        node can be either the public key of the node or the name if the name was changed
         """
         total = 0
         found = 0

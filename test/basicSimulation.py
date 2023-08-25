@@ -9,9 +9,9 @@ channel_graph.transform_channel_graph_to_simpler(tentative_nodes_to_keep=1000, s
 
 simulation = Simulation(channel_graph=channel_graph, base=base)
 simulation.run_success_payments_simulation(
-            payments_to_simulate=1000,
+            payments_to_simulate=10_000,
             payments_amount=10_000,
-            mu=1000,
+            mu=1,
             base=20_000,
             distribution="uniform",
             dist_func="",

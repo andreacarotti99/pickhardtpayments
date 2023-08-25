@@ -8,5 +8,5 @@ print(f"Nodes in the network: {channel_graph.network.number_of_nodes()}")
 channel_graph.transform_channel_graph_to_simpler(tentative_nodes_to_keep=2000, strategy="random")
 print(f"Nodes in the network: {channel_graph.network.number_of_nodes()}")
 
-v = VisualNetworkRepresentation(channel_graph)
+v = VisualNetworkRepresentation(channel_graph.network)
 v.show_network(keep_labels=False)

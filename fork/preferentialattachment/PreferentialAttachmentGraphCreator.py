@@ -28,9 +28,10 @@ def create_preferential_attachment_graph(num_of_nodes: int):
     return G
 
 
-def create_snapshot(G):
+def create_snapshot(G, fee_base_msat: int = 1000, fee_ppm: int = 24, capacity_sat: int = 2_000_000):
     # create a list of channels
     channels = []
+
     for u, v in G.edges():
         short_channel_id = str(random.randint(100000000000000000, 999999999999999999))
         channel_uv = {
@@ -38,14 +39,14 @@ def create_snapshot(G):
             "destination": str(v),
             "short_channel_id": short_channel_id,
             "public": True,
-            "satoshis": 2000000,
-            "amount_msat": "2000000000msat",
+            "satoshis": capacity_sat,
+            "amount_msat": str(capacity_sat) + "000msat",
             "message_flags": 1,
             "channel_flags": 0,
             "active": True,
             "last_update": 0000000000,
-            "base_fee_millisatoshi": 1000,
-            "fee_per_millionth": 24,
+            "base_fee_millisatoshi": fee_base_msat,
+            "fee_per_millionth": fee_ppm,
             "delay": 144,
             "htlc_minimum_msat": "1000msat",
             "htlc_maximum_msat": "100000000msat",
@@ -59,14 +60,14 @@ def create_snapshot(G):
             "destination": str(u),
             "short_channel_id": short_channel_id,
             "public": True,
-            "satoshis": 2000000,
-            "amount_msat": "2000000000msat",
+            "satoshis": capacity_sat,
+            "amount_msat": str(capacity_sat) + "000msat",
             "message_flags": 1,
             "channel_flags": 0,
             "active": True,
             "last_update": 0000000000,
-            "base_fee_millisatoshi": 1000,
-            "fee_per_millionth": 24,
+            "base_fee_millisatoshi": fee_base_msat,
+            "fee_per_millionth": fee_ppm,
             "delay": 144,
             "htlc_minimum_msat": "1000msat",
             "htlc_maximum_msat": "100000000msat",

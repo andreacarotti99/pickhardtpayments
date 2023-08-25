@@ -223,11 +223,18 @@ class UncertaintyChannel(Channel):
 
         # FIXME: include the in_flight stuff
         if int(self.conditional_capacity) > 0 and number_of_pieces > 0:
+
+            # most of the time you will enter this if clause, and you will return
+            # pieces that is a list of tuples like this one below where the first number is the capacity and the second the cost
+            # [(2000000, 1509), (2000000, 3009), (2000000, 4509), (2000000, 6009), (2000000, 7509)]
+
             arc_capacity = int(self.conditional_capacity/number_of_pieces)
             uncertintay_unit_cost = self.linearized_integer_uncertainty_unit_cost()
             for i in range(number_of_pieces):
                 pieces.append((arc_capacity, (i+1)*uncertintay_unit_cost +
                                mu * self.linearized_integer_routing_unit_cost()))
+                # uuc = uncertintay_unit_cost
+                # liruc = self.linearized_integer_routing_unit_cost()
         return pieces
 
     """

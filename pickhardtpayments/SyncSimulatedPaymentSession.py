@@ -75,6 +75,8 @@ class SyncSimulatedPaymentSession:
 
     def _prepare_mcf_solver(self, src, dest, amt, mu, base_fee):
         """
+        GO to https://developers.google.com/optimization/flow/mincostflow to understand the code in this method...
+
         computes the uncertainty network given our prior belief and prepares the min cost flow solver
 
         This function can define a value for mu to control how heavily we combine the uncertainty cost and fees Also
@@ -95,10 +97,18 @@ class SyncSimulatedPaymentSession:
             # However the pruning would be much better to work on quantiles of normalized cost
             # So as soon as we have better Scaling, Centralization and feature engineering we can
             # probably have a more focused pruning
-            if self._prune_network and channel.success_probability() < 0.9:
+            if self._prune_network and channel.success_probability(amt=250_000) < 0.9:
                 continue
             cnt = 0
             # QUANTIZATION):
+            # debug
+            # plc0 = channel.get_piecewise_linearized_costs(mu=0)
+            # plc1 = channel.get_piecewise_linearized_costs(mu=1)
+            # plc10 = channel.get_piecewise_linearized_costs(mu=10)
+            # plc100 = channel.get_piecewise_linearized_costs(mu=100)
+            # plc1000 = channel.get_piecewise_linearized_costs(mu=1000)
+
+
             for capacity, cost in channel.get_piecewise_linearized_costs(mu=mu):
                 index = self._min_cost_flow.AddArcWithCapacityAndUnitCost(self._mcf_id[s],
                                                                           self._mcf_id[d],
@@ -113,7 +123,7 @@ class SyncSimulatedPaymentSession:
         for i in self._uncertainty_network.network.nodes():
             self._min_cost_flow.SetNodeSupply(self._mcf_id[i], 0)
 
-        # add amount to sending node
+        # add amount to sending node --> https://developers.google.com/optimization/flow/mincostflow
         # print(self._mcf_id)
         self._min_cost_flow.SetNodeSupply(
             self._mcf_id[src], int(amt))  # /QUANTIZATION))
@@ -222,6 +232,8 @@ class SyncSimulatedPaymentSession:
         attempts_in_round = List[Attempt]
 
         # First we prepare the min cost flow by getting arcs from the uncertainty network
+        # debug
+        # print("GENERATING CANDIDATE PATHS...")
         self._prepare_mcf_solver(src, dest, amt, mu, base)
         start = time.time()
         # print("solving mcf...")
