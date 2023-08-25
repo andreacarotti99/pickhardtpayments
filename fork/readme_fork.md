@@ -20,3 +20,25 @@ s.run_success_payments_simulation(
     verbose=False
 )
 ```
+
+#### Export the results of the simulation
+
+```
+export = ExportResults(simulation=s)
+export.export_results()
+```
+
+#### Get the fees of a given node
+
+```
+node_pub_key = '02da0713ab1b12eeb01f212944a435077f39f1b767ee5c24b01cdb4b0b9377b66f'
+node_pub_key_fees = simulation.get_fees(node_pub_key)
+```
+
+#### Get the ratio (fees / capacity) of a given node
+
+```
+node_pub_key = '02da0713ab1b12eeb01f212944a435077f39f1b767ee5c24b01cdb4b0b9377b66f'
+node_pub_key_ratio = simulation.get_ratio(node_pub_key)
+```
+
