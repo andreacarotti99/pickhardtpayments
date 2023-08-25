@@ -5,8 +5,10 @@ nodes in the network can earn more from routing payments and how to discourage t
 
 ## Run a simulation of multiple payments
 
-base: is the base fee threshold, edges with base_fee over the threshold are removed from the graph
-distribution: can be "uniform" or "weighted_by_capacity", depending on how we want the payment to be distributed in the graph
+base: is the base fee threshold, edges with base_fee over the threshold are removed from the graph.
+
+distribution: can be "uniform" or "weighted_by_capacity", depending on how we want the payment to be distributed in the graph.
+
 dist_func: is the distribution function according to the capacity of the node that can be "linear", "quadratic", "cubic" or "exponential".
 ```
 base = 20_000
