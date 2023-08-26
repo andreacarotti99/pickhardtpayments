@@ -58,7 +58,7 @@ class ChannelGraph:
             if short_channel_id in self.network[src][dest]:
                 return self.network[src][dest][short_channel_id]["channel"]
 
-    def get_channel_without_short_channel_id(self, src: str, dest: str):
+    def get_channel_without_short_channel_id(self, src: str, dest: str) -> Channel:
         """
         returns a specific channel object identified by source, destination but without short_channel_id
         from the ChannelGraph, the first channel_id between source and destination is picked
