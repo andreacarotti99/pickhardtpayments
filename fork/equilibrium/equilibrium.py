@@ -17,7 +17,7 @@ logging.basicConfig(filename=log_file, level=logging.DEBUG, format=log_format, f
 # 6) Repeating 3), 4) and 5) 10 times and observe the difference in fee earned by the randomly picked node
 
 base = 20_000
-payments_to_simulate = 1_000
+payments_to_simulate = 100
 payments_amount = 10_000
 mu = 100
 distribution = "weighted_by_capacity"
@@ -55,36 +55,34 @@ for i in range(3):
 
     logging.debug('Random node picked: %s', random_node)
 
-    for n in channel_graph.get_connected_nodes(random_node):
-        ch = channel_graph.get_channel_without_short_channel_id(random_node, n)
-        logging.debug('|_ %d with %s', ch.capacity, str(ch.dest))
+    for n in channel_graph.get_connected_nodes(random_node):  # I have to iterate over all neighbors of random_node
+        for ch in channel_graph.get_channels(random_node, n):  # I have to iterate over all the channels between the two nodes
 
+            # ch = channel_graph.get_channel_without_short_channel_id(random_node, n)
+            logging.debug('|_ %d with %s', ch.capacity, str(ch.dest))
 
     old_neighbors = channel_graph.get_connected_nodes(random_node)
     new_neighbors = []
 
     for dest_node in channel_graph.get_connected_nodes(random_node):
-        ch = channel_graph.get_channel_without_short_channel_id(random_node, dest_node)
+        for ch in channel_graph.get_channels(random_node, n):
+
+            logging.debug('closing channel with: %s', str(ch.dest))
+            print('closing channel with: ', ch.dest)
+            channel_graph.close_channel(random_node, dest_node, ch.short_channel_id)
 
 
-        logging.debug('closing channel with: %s', str(ch.dest))
-        print('closing channel with: ', ch.dest)
-        channel_graph.close_channel(random_node, dest_node)
-
-
-
-
-        new_random_node = channel_graph.get_random_node_uniform_distribution()
-        while new_random_node == random_node or new_random_node in old_neighbors or new_random_node in new_neighbors:
-            print('The node chosen was already connected to the random target node! Choosing andother node...')
             new_random_node = channel_graph.get_random_node_uniform_distribution()
+            while new_random_node == random_node or new_random_node in old_neighbors or new_random_node in new_neighbors:
+                print('The node chosen was already connected to the random target node! Choosing andother node...')
+                new_random_node = channel_graph.get_random_node_uniform_distribution()
 
-        logging.debug('opening channel with: %s', str(new_random_node))
-        print('opening channel with: ', new_random_node)
-        channel_graph.create_channel(random_node, new_random_node, ch.is_announced, ch.capacity,
-                                     ch.flags, ch.is_active, ch.last_update, ch.base_fee, ch.ppm, ch.cltv_delta,
-                                     ch.htlc_min_msat, ch.htlc_max_msat, str(ch.short_channel_id) + '_2')
-        new_neighbors.append(new_random_node)
+            logging.debug('opening channel with: %s', str(new_random_node))
+            print('opening channel with: ', new_random_node)
+            channel_graph.create_channel(random_node, new_random_node, ch.is_announced, ch.capacity,
+                                         ch.flags, ch.is_active, ch.last_update, ch.base_fee, ch.ppm, ch.cltv_delta,
+                                         ch.htlc_min_msat, ch.htlc_max_msat, str(ch.short_channel_id) + '_2')
+            new_neighbors.append(new_random_node)
 
     for n in channel_graph.get_connected_nodes(random_node):
         ch = channel_graph.get_channel_without_short_channel_id(random_node, n)

@@ -58,6 +58,19 @@ class ChannelGraph:
             if short_channel_id in self.network[src][dest]:
                 return self.network[src][dest][short_channel_id]["channel"]
 
+    def get_channels(self, src: str, dest: str) -> [Channel]:
+        """
+        returns a list of channel objects identified by source, destination, for every short_channel_id
+        from the ChannelGraph
+        """
+        result = []
+        if self.network.has_edge(src, dest):
+            for channel_id, channel_data in self.network[src][dest].items():
+                result.append(channel_data["channel"])
+            return result
+        else:
+            return []
+
     def get_channel_without_short_channel_id(self, src: str, dest: str) -> Channel:
         """
         returns a specific channel object identified by source, destination but without short_channel_id
@@ -454,7 +467,7 @@ class ChannelGraph:
         print(f"The network was modified and now has {largest_cc.number_of_nodes()} nodes")
         return
 
-    def close_channel(self, src: str, dest: str):
+    def close_all_channels(self, src: str, dest: str):
         """
         closes all the channels btw src and dest
         IMPORTANT: only in the CHANNELGRAPH are closed! (not just in one of the two)
@@ -464,6 +477,20 @@ class ChannelGraph:
             for edge_key in edge_keys:
                 self.network.remove_edge(src, dest, edge_key)
                 self.network.remove_edge(dest, src, edge_key)
+        else:
+            print(f"No edges between {src} and {dest}, 0 channels were closed")
+        return
+
+    def close_channel(self, src: str, dest: str, short_channel_id: str):
+        """
+        closes the channel btw src and dest given the short channel id
+        IMPORTANT: only in the CHANNELGRAPH are closed! (not just in one of the two)
+        """
+
+        if self.network.has_edge(src, dest):
+            if short_channel_id in self.network[src][dest]:
+                self.network.remove_edge(src, dest, short_channel_id)
+                self.network.remove_edge(dest, src, short_channel_id)
         else:
             print(f"No edges between {src} and {dest}, 0 channels were closed")
         return
