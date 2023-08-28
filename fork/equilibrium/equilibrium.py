@@ -3,6 +3,8 @@ from pickhardtpayments.pickhardtpayments import ChannelGraph
 from pickhardtpayments.fork.ExportResults import ExportResults
 
 import logging
+import csv
+
 
 log_format = "%(message)s"
 log_file = "results_10trans_10000SAT_100mu__distweig_linear_amountsdistfixe_1.log"
@@ -16,16 +18,20 @@ logging.basicConfig(filename=log_file, level=logging.DEBUG, format=log_format, f
 # 5) Running a new simulation, obtaining some fees for every node and specifically for the changed node
 # 6) Repeating 3), 4) and 5) 10 times and observe the difference in fee earned by the randomly picked node
 
+# -- params -----------------------------
+
 base = 20_000
-payments_to_simulate = 100
+payments_to_simulate = 500
 payments_amount = 10_000
 mu = 100
 distribution = "weighted_by_capacity"
 dist_func = "linear"
 verbose = False
-tentative_nodes_to_keep = 30
-
+tentative_nodes_to_keep = 200
+total_tests = 10
 snapshot_path = '/Users/andreacarotti/Desktop/LN/_PickhardtPayments/pickhardtpayments/fork/SNAPSHOTS/cosimo_19jan2023_converted.json'
+
+# ----------------------------------------
 
 channel_graph = ChannelGraph(snapshot_path)
 channel_graph.transform_channel_graph_to_simpler(
@@ -46,32 +52,42 @@ s.run_success_payments_simulation(
 export = ExportResults(simulation=s)
 export.export_results()
 
-#todo: fix the get_channel_without_short_channel_id because these nodes have many channels between nodes
+old_ratio_random_nodes = {}
+new_ratio_random_nodes = {}
+random_nodes = []
 
-for i in range(3):
+
+for i in range(total_tests):
+
+    # Choosing a target random node, this node will be used for comparison by changing its channels
     random_node = channel_graph.get_random_node_uniform_distribution()
     while len(channel_graph.get_connected_nodes(random_node)) > (tentative_nodes_to_keep//2):
         random_node = channel_graph.get_random_node_uniform_distribution()
-
+    random_nodes.append(random_node)
     logging.debug('Random node picked: %s', random_node)
+    old_ratio_random_nodes[random_node] = s.get_ratio(random_node)
 
-    for n in channel_graph.get_connected_nodes(random_node):  # I have to iterate over all neighbors of random_node
-        for ch in channel_graph.get_channels(random_node, n):  # I have to iterate over all the channels between the two nodes
-
+    # printing all the channels of the target node
+    for dest_node in channel_graph.get_connected_nodes(random_node):  # I have to iterate over all neighbors of random_node
+        for ch in channel_graph.get_channels(random_node, dest_node):  # I have to iterate over all the channels between the two nodes
             # ch = channel_graph.get_channel_without_short_channel_id(random_node, n)
             logging.debug('|_ %d with %s', ch.capacity, str(ch.dest))
 
+    # old_neighbors are the orginal neighbors of the target node that will be substituted
     old_neighbors = channel_graph.get_connected_nodes(random_node)
+
+    # new_neighbors are the new neighbors of the target node after closing all old channels
     new_neighbors = []
 
     for dest_node in channel_graph.get_connected_nodes(random_node):
-        for ch in channel_graph.get_channels(random_node, n):
+        for ch in channel_graph.get_channels(random_node, dest_node):
 
+            # Proceeding in closing the old channels (one by one) and opening a new channel of equal size
             logging.debug('closing channel with: %s', str(ch.dest))
             print('closing channel with: ', ch.dest)
             channel_graph.close_channel(random_node, dest_node, ch.short_channel_id)
 
-
+            # Randomly picking the new node to which we create the channel to
             new_random_node = channel_graph.get_random_node_uniform_distribution()
             while new_random_node == random_node or new_random_node in old_neighbors or new_random_node in new_neighbors:
                 print('The node chosen was already connected to the random target node! Choosing andother node...')
@@ -84,13 +100,14 @@ for i in range(3):
                                          ch.htlc_min_msat, ch.htlc_max_msat, str(ch.short_channel_id) + '_2')
             new_neighbors.append(new_random_node)
 
-    for n in channel_graph.get_connected_nodes(random_node):
-        ch = channel_graph.get_channel_without_short_channel_id(random_node, n)
-        logging.debug('|_ %d with %s', ch.capacity, str(ch.dest))
+    # printing all the new channels of the target node
+    for dest_node in channel_graph.get_connected_nodes(random_node):
+        for ch in channel_graph.get_channels(random_node, dest_node):
+            logging.debug('|_ %d with %s', ch.capacity, str(ch.dest))
 
-
-    s = Simulation(channel_graph, base)
-    s.run_success_payments_simulation(
+    # Proceeding with a new simulation given the new channels of the target node
+    sn = Simulation(channel_graph, base)
+    sn.run_success_payments_simulation(
         payments_to_simulate=payments_to_simulate,
         payments_amount=payments_amount,
         mu=mu,
@@ -100,7 +117,19 @@ for i in range(3):
         verbose=verbose
     )
 
+    new_ratio_random_nodes[random_node] = sn.get_ratio(random_node)
     logging.debug('\n')
-
-    export = ExportResults(simulation=s)
+    export = ExportResults(simulation=sn)
     export.export_results(simulation_number=str(i+2))
+
+
+# Comparing the old ratios of the target node with the new one and saving the result in a csv file
+combined_data = [(node, old_ratio_random_nodes[node], new_ratio_random_nodes[node]) for node in random_nodes]
+combined_data.sort()
+csv_filename = "node_ratios.csv"
+with open(csv_filename, mode='w', newline='') as csv_file:
+    csv_writer = csv.writer(csv_file)
+    csv_writer.writerow(["Public Key", "Old Ratio", "New Ratio"])
+    csv_writer.writerows(combined_data)
+
+print(f"New ratios has been exported to {csv_filename}")
