@@ -48,7 +48,7 @@ print('capacity now is: ', d2[random_node])
 
 combined_data = []
 
-combined_data = [((node, channel_graph.[node], new_neighbors[node])) for node in random_nodes]
+combined_data = [((node, old_neighbors[node], new_neighbors[node])) for node in random_nodes]
 
 
 

@@ -21,15 +21,26 @@ logging.basicConfig(filename=log_file, level=logging.DEBUG, format=log_format, f
 # -- params -----------------------------
 
 base = 20_000
-payments_to_simulate = 500
+payments_to_simulate = 1000
 payments_amount = 10_000
 mu = 100
 distribution = "weighted_by_capacity"
 dist_func = "linear"
 verbose = False
-tentative_nodes_to_keep = 200
-total_tests = 10
+tentative_nodes_to_keep = 500
+total_tests = 30
 snapshot_path = '/Users/andreacarotti/Desktop/LN/_PickhardtPayments/pickhardtpayments/fork/SNAPSHOTS/cosimo_19jan2023_converted.json'
+
+logging.debug('base: %s', str(base))
+logging.debug('payments_to_simulate: %s', str(payments_to_simulate))
+logging.debug('payments_amount: %s', str(payments_amount))
+logging.debug('mu: %s', str(mu))
+logging.debug('distribution: %s', str(distribution))
+logging.debug('base: %s', str(base))
+logging.debug('dist_func: %s', str(dist_func))
+logging.debug('tentative_nodes_to_keep: %s', str(tentative_nodes_to_keep))
+logging.debug('total_tests: %s', str(total_tests))
+logging.debug('snapshot_path: %s', str(snapshot_path))
 
 # ----------------------------------------
 
